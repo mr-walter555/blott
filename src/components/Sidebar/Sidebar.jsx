@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import {
   FileText, Star, PushPin as PushPinRaw, Archive, Trash, GearSix,
-  Plus, SidebarSimple, MagnifyingGlass, CaretDown, CaretRight, Users, LinkSimple
+  Plus, SidebarSimple, MagnifyingGlass, CaretDown, CaretRight, CalendarBlank
 } from '@phosphor-icons/react'
 
 const PushPin = (props) => <PushPinRaw {...props} style={{ ...props.style, transform: 'rotate(-45deg)' }} />
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
-import { useWorkspaceStore } from '../../store/workspaceStore'
 import WorkspaceSection from './WorkspaceSection'
-import ShareModal from '../Share/ShareModal'
 
 const NAV_ITEMS = [
   { id: 'all', label: 'All Notes', icon: FileText },
@@ -18,6 +16,7 @@ const NAV_ITEMS = [
   { id: 'pinned', label: 'Pinned', icon: PushPin },
   { id: 'archived', label: 'Archived', icon: Archive },
   { id: 'trash', label: 'Trash', icon: Trash },
+  { id: 'calendar', label: 'Calendar', icon: CalendarBlank },
 ]
 
 const labelVariants = {
@@ -57,10 +56,6 @@ export default function Sidebar() {
   const notes           = useNotesStore(s => s.notes)
 
   const [workspacesExpanded, setWorkspacesExpanded] = useState(true)
-  const [sharedExpanded, setSharedExpanded]         = useState(true)
-  const [shareModalNote, setShareModalNote]          = useState(null)
-
-  const sharedNotes = Object.values(notes).filter(n => n.shareToken && !n.trashed && !n.archived)
 
   const getCounts = (view) => {
     const all = Object.values(notes)
@@ -84,7 +79,6 @@ export default function Sidebar() {
 
       {/* Header */}
       <div className={`flex items-center pt-4 pb-2 transition-all duration-250 ${c ? 'justify-center px-0' : 'justify-between px-3'}`}>
-        
         <button onClick={toggleSidebar} className="btn-icon flex-shrink-0" title={c ? 'Expand sidebar' : 'Collapse sidebar'}>
           <SidebarSimple className="w-5 h-5 text-black dark:text-white" />
         </button>
@@ -171,71 +165,7 @@ export default function Sidebar() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Shared */}
-        <AnimatePresence initial={false}>
-          {!c && (
-            <motion.div
-              key="shared"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.15, delay: 0.15 } }}
-              exit={{ opacity: 0, transition: { duration: 0.08 } }}
-              className="pt-2"
-            >
-              <button
-                onClick={() => setSharedExpanded(!sharedExpanded)}
-                className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
-              >
-                {sharedExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
-                Shared
-              </button>
-
-              <AnimatePresence initial={false}>
-                {sharedExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="overflow-hidden"
-                  >
-                    {sharedNotes.length > 0 ? (
-                      <div className="space-y-0.5">
-                        {sharedNotes.map(n => (
-                          <button
-                            key={n.id}
-                            onClick={() => setSelectedNote(n.id)}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                          >
-                            <LinkSimple className="w-3.5 h-3.5 flex-shrink-0 text-brown-400" />
-                            <span className="flex-1 text-left truncate">{n.title || 'Untitled'}</span>
-                            <Users
-                              onClick={e => { e.stopPropagation(); setShareModalNote(n) }}
-                              className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <SharedEmptyState
-                        onCreate={async () => {
-                          const note = await createNote()
-                          setSelectedNote(note.id)
-                          setShareModalNote(note)
-                        }}
-                      />
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </nav>
-
-      {shareModalNote && (
-        <ShareModal note={shareModalNote} onClose={() => setShareModalNote(null)} />
-      )}
 
       {/* Footer */}
       <div className={`pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex items-center transition-all duration-250 ${c ? 'flex-col gap-1 px-1.5' : 'justify-between px-2'}`}>
@@ -249,25 +179,5 @@ export default function Sidebar() {
         </button>
       </div>
     </div>
-  )
-}
-
-function SharedEmptyState({ onCreate }) {
-  const [loading, setLoading] = useState(false)
-
-  const handle = async () => {
-    setLoading(true)
-    try { await onCreate() } finally { setLoading(false) }
-  }
-
-  return (
-    <button
-      onClick={handle}
-      disabled={loading}
-      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-400 transition-colors disabled:opacity-50"
-    >
-      <Plus className="w-3.5 h-3.5 flex-shrink-0" />
-      {loading ? 'Creating…' : 'Start collaborating'}
-    </button>
   )
 }
