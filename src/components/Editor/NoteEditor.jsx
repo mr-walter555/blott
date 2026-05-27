@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -13,18 +13,14 @@ import Color from '@tiptap/extension-color'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import Image from '@tiptap/extension-image'
 import { createLowlight, common } from 'lowlight'
-import { ChatCircle } from '@phosphor-icons/react'
 
 const lowlight = createLowlight(common)
 import { useNotesStore } from '../../store/notesStore'
 import { useUIStore } from '../../store/uiStore'
 import { useAutoSave } from '../../hooks/useAutoSave'
-import { useCollaboration } from '../../hooks/useCollaboration'
 import EditorToolbar from './EditorToolbar'
 import AIFloatingMenu from './AIFloatingMenu'
 import NoteHeader from './NoteHeader'
-import CollaboratorAvatars from '../Collaboration/CollaboratorAvatars'
-import CommentsPanel from '../Collaboration/CommentsPanel'
 import { getWordCount } from '../../utils/helpers'
 
 const CODE_KEYWORDS = /\b(function|const|let|var|import|export|def|async|await|=>|interface|typeof|instanceof)\b/
@@ -45,23 +41,8 @@ export default function NoteEditor({ noteId }) {
   const [title, setTitle] = useState(note?.title || '')
   const [content, setContent] = useState(note?.content || '')
   const [menuPos, setMenuPos] = useState(null)
-  const [showComments, setShowComments] = useState(false)
 
   useAutoSave(noteId, content, title, note?.shareToken)
-
-  // ── Collaboration ──────────────────────────────────────────────────
-  const handleRemoteChange = useCallback(({ content: remoteContent, title: remoteTitle }) => {
-    if (remoteContent !== undefined && editor && editor.getHTML() !== remoteContent) {
-      editor.commands.setContent(remoteContent, false)
-      setContent(remoteContent)
-    }
-    if (remoteTitle !== undefined) setTitle(remoteTitle)
-  }, [])
-
-  const { collaborators, emitChange, emitCursor, emitComment, userId, displayName } = useCollaboration({
-    shareToken: note?.shareToken || null,
-    onRemoteChange: handleRemoteChange,
-  })
 
   const editor = useEditor({
     extensions: [
@@ -96,13 +77,7 @@ export default function NoteEditor({ noteId }) {
       },
     },
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML()
-      setContent(html)
-      emitChange(html, title)
-    },
-    onSelectionUpdate: ({ editor }) => {
-      const { from, to } = editor.state.selection
-      emitCursor(from, to)
+      setContent(editor.getHTML())
     },
   })
 
@@ -131,7 +106,6 @@ export default function NoteEditor({ noteId }) {
 
   const handleTitleChange = (e) => {
     setTitle(e.target.value)
-    emitChange(content, e.target.value)
   }
 
   const handleContextMenu = (e) => {
@@ -152,13 +126,11 @@ export default function NoteEditor({ noteId }) {
 
   const wordCount = getWordCount(content)
   const charCount = editor?.storage.characterCount?.characters() ?? 0
-  const isShared = !!note.shareToken
 
   return (
     <div className="flex h-full bg-white flex-1 overflow-hidden">
-      {/* Main editor column */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <NoteHeader note={note} editor={editor} collaborators={collaborators} />
+        <NoteHeader note={note} editor={editor} />
         <EditorToolbar editor={editor} />
 
         <div className="flex-1 overflow-y-auto">
@@ -178,7 +150,6 @@ export default function NoteEditor({ noteId }) {
           </div>
         </div>
 
-        {/* Right-click AI menu */}
         {menuPos && editor && (
           <div
             className="fixed z-50"
@@ -194,32 +165,9 @@ export default function NoteEditor({ noteId }) {
             <span>{wordCount} words</span>
             <span>{charCount} chars</span>
           </div>
-          <div className="flex items-center gap-3">
-            {isShared && <CollaboratorAvatars collaborators={collaborators} />}
-            {isShared && (
-              <button
-                onClick={() => setShowComments(v => !v)}
-                className={`flex items-center gap-1 text-xs transition-colors ${showComments ? 'text-brown-600' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <ChatCircle className="w-3.5 h-3.5" />
-                Comments
-              </button>
-            )}
-            <span>Auto-saved</span>
-          </div>
+          <span>Auto-saved</span>
         </div>
       </div>
-
-      {/* Comments panel */}
-      {isShared && showComments && (
-        <CommentsPanel
-          shareToken={note.shareToken}
-          userId={userId}
-          displayName={displayName}
-          onNewComment={emitComment}
-          onClose={() => setShowComments(false)}
-        />
-      )}
     </div>
   )
 }
