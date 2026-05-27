@@ -8,7 +8,7 @@ import ColorPicker from '../common/ColorPicker'
 import { formatDate } from '../../utils/helpers'
 import ShareModal from '../Share/ShareModal'
 
-export default function NoteHeader({ note, editor }) {
+export default function NoteHeader({ note, editor, collaborators = [] }) {
   const updateNote = useNotesStore(s => s.updateNote)
   const trashNote = useNotesStore(s => s.trashNote)
   const restoreNote = useNotesStore(s => s.restoreNote)
@@ -99,7 +99,7 @@ export default function NoteHeader({ note, editor }) {
 
 
       {shareModalOpen && (
-        <ShareModal note={note} onClose={closeShareModal} />
+        <ShareModal note={note} onClose={closeShareModal} collaborators={collaborators} />
       )}
     </div>
   )

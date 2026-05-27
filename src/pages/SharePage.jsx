@@ -1,10 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { io } from 'socket.io-client'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
+function getViewerIdentity() {
+  let userId = localStorage.getItem('collab_userId')
+  if (!userId) { userId = crypto.randomUUID(); localStorage.setItem('collab_userId', userId) }
+  const displayName = localStorage.getItem('collab_displayName') || 'Viewer'
+  return { userId, displayName }
+}
+
 export default function SharePage({ token }) {
-  const [note, setNote]     = useState(null)
-  const [status, setStatus] = useState('loading') // loading | found | notfound
+  const [note, setNote]       = useState(null)
+  const [status, setStatus]   = useState('loading')
+  const [viewers, setViewers] = useState([])
+  const socketRef             = useRef(null)
 
   useEffect(() => {
     fetch(`${API_URL}/api/share/${token}/content`)
@@ -13,28 +23,36 @@ export default function SharePage({ token }) {
       .catch(() => setStatus('notfound'))
   }, [token])
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Loading…</p>
-      </div>
-    )
-  }
+  // Join socket room so owner can see this viewer as "viewing now"
+  useEffect(() => {
+    if (status !== 'found') return
+    const { userId, displayName } = getViewerIdentity()
+    const socket = io(API_URL, { transports: ['websocket'] })
+    socketRef.current = socket
+    socket.on('connect', () => socket.emit('join', { shareToken: token, userId, displayName }))
+    socket.on('users', users => setViewers(users))
+    socket.on('user:joined', user => setViewers(prev => prev.find(u => u.userId === user.userId) ? prev : [...prev, user]))
+    socket.on('user:left', ({ userId: id }) => setViewers(prev => prev.filter(u => u.userId !== id)))
+    return () => { socket.emit('leave', { shareToken: token, userId }); socket.disconnect() }
+  }, [status, token])
 
-  if (status === 'notfound') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-800 mb-2">Note not found</p>
-          <p className="text-gray-400 text-sm">This link may have been deactivated.</p>
-        </div>
+  if (status === 'loading') return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <p className="text-gray-400 text-sm">Loading…</p>
+    </div>
+  )
+
+  if (status === 'notfound') return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-2xl font-bold text-gray-800 mb-2">Note not found</p>
+        <p className="text-gray-400 text-sm">This link may have been deactivated.</p>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Topbar */}
       <div className="bg-brown-600 px-6 py-3 flex items-center gap-3">
         <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
           <svg className="w-4 h-4 fill-white" viewBox="0 0 16 16">
@@ -42,12 +60,30 @@ export default function SharePage({ token }) {
           </svg>
         </div>
         <span className="text-white font-semibold text-sm">Smart Notepad</span>
+
+        {/* Live viewer bubbles */}
+        {viewers.length > 0 && (
+          <div className="flex items-center gap-1 ml-2">
+            {viewers.slice(0, 5).map(v => (
+              <div key={v.userId} title={v.displayName}
+                className="w-7 h-7 rounded-full border-2 border-white/40 flex items-center justify-center text-xs font-bold text-white"
+                style={{ background: v.color }}>
+                {v.displayName[0].toUpperCase()}
+              </div>
+            ))}
+            {viewers.length > 5 && (
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs text-white font-medium">
+                +{viewers.length - 5}
+              </div>
+            )}
+          </div>
+        )}
+
         <span className="ml-auto bg-white/20 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide">
           Shared
         </span>
       </div>
 
-      {/* Note content */}
       <div className="max-w-3xl mx-auto px-6 py-10 pb-20">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{note.title || 'Untitled'}</h1>
         <p className="text-xs text-gray-400 mb-8">

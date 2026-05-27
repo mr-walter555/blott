@@ -158,7 +158,7 @@ export default function NoteEditor({ noteId }) {
     <div className="flex h-full bg-white flex-1 overflow-hidden">
       {/* Main editor column */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <NoteHeader note={note} editor={editor} />
+        <NoteHeader note={note} editor={editor} collaborators={collaborators} />
         <EditorToolbar editor={editor} />
 
         <div className="flex-1 overflow-y-auto">

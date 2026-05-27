@@ -36,6 +36,12 @@ export async function getShareInfo(token) {
 
 export const sharePageUrl = (token) => `${API_URL}/api/share/page/${token}`
 
+export async function listInvites(shareToken) {
+  const res = await fetch(`${API_URL}/api/invite/list/${shareToken}`)
+  if (!res.ok) return []
+  return res.json()
+}
+
 export async function createInvite({ noteId, shareToken, email, permissions = 'view', noteTitle }) {
   const res = await fetch(`${API_URL}/api/invite`, {
     method: 'POST',
