@@ -252,7 +252,7 @@ const enableShare = async () => {
                 )}
               </div>
               <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                For internet access, expose port 3001 via a tunnel (e.g. ngrok, Cloudflare Tunnel) and replace <span className="font-mono">localhost:3001</span> with your public URL.
+                Share links use your configured backend URL. Set <span className="font-mono">VITE_API_URL</span> to your deployed backend to make links work publicly.
               </p>
             </div>
 

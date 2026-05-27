@@ -1,4 +1,5 @@
-const BASE = 'http://localhost:3001/api/share'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE = `${API_URL}/api/share`
 
 export async function createShare({ noteId, title, content, token }) {
   const res = await fetch(BASE, {
@@ -33,10 +34,10 @@ export async function getShareInfo(token) {
   return res.json()
 }
 
-export const sharePageUrl = (token) => `http://localhost:3001/api/share/page/${token}`
+export const sharePageUrl = (token) => `${API_URL}/api/share/page/${token}`
 
 export async function createInvite({ noteId, shareToken, email, permissions = 'view', noteTitle }) {
-  const res = await fetch('http://localhost:3001/api/invite', {
+  const res = await fetch(`${API_URL}/api/invite`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ noteId, shareToken, email, permissions, noteTitle }),

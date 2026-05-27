@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, ChatCircle, PaperPlaneRight, Trash } from '@phosphor-icons/react'
 
-const BASE = 'http://localhost:3001/api/comments'
+const BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/comments`
 
 export default function CommentsPanel({ shareToken, userId, displayName, onNewComment, onClose }) {
   const [comments, setComments] = useState([])
