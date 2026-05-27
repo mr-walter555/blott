@@ -11,7 +11,7 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@tiptap/extension-character-count": "^2.1.13",
-    "@tiptap/extension-code-block-lowlight": "^3.23.6",
+    "@tiptap/extension-code-block-lowlight": "^2.27.2",
     "@tiptap/extension-color": "^2.1.13",
     "@tiptap/extension-highlight": "^2.1.13",
     "@tiptap/extension-image": "^2.27.2",
