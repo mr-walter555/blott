@@ -1,31 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Lock, Globe, Link, Check, CaretDown, ArrowSquareOut, Info } from '@phosphor-icons/react'
-import { createShare, deleteShare, getShareInfo, sharePageUrl, syncShare, createInvite, listInvites } from '../../services/shareService'
+import { Lock, Globe, Link, Check, CaretDown, ArrowSquareOut, Info } from '@phosphor-icons/react'
+import { createShare, deleteShare, getShareInfo, sharePageUrl, createInvite, listInvites } from '../../services/shareService'
 import { useNotesStore } from '../../store/notesStore'
+import { gravatarUrl } from '../../utils/gravatar'
 import DropdownMenu from '../common/DropdownMenu'
 
 const TABS = ['Share', 'Publish']
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
-function Avatar({ email, avatarUrl, displayName, isLive }) {
+function Avatar({ email }) {
   const [imgError, setImgError] = useState(false)
-  const initials = (email || displayName || '?')[0].toUpperCase()
+  const initial = (email || '?')[0].toUpperCase()
 
   return (
-    <div className="relative flex-shrink-0">
-      <div className="w-8 h-8 rounded-full overflow-hidden bg-brown-100 flex items-center justify-center">
-        {avatarUrl && !imgError
-          ? <img src={avatarUrl} alt={email} className="w-full h-full object-cover" onError={() => setImgError(true)} />
-          : <span className="text-sm font-semibold text-brown-600">{initials}</span>
-        }
-      </div>
-      {isLive && (
-        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
-      )}
+    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+      {email && !imgError
+        ? <img src={gravatarUrl(email)} alt={email} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+        : <span className="text-sm font-semibold text-gray-500">{initial}</span>
+      }
     </div>
   )
 }
 
-export default function ShareModal({ note, onClose, collaborators = [] }) {
+export default function ShareModal({ note, onClose }) {
   const updateNote              = useNotesStore(s => s.updateNote)
   const [tab, setTab]           = useState('Share')
   const [status, setStatus]     = useState('idle')
@@ -34,15 +31,16 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
   const [accessOpen, setAccessOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteStatus, setInviteStatus] = useState('idle')
-  const [invitees, setInvitees]   = useState([])
+  const [invitees, setInvitees] = useState([])
   const [liveViewers, setLiveViewers] = useState([])
   const accessAnchorRef = useRef(null)
   const pollRef = useRef(null)
 
+  const ownerName  = localStorage.getItem('sn_user_name') || 'You'
+  const ownerEmail = localStorage.getItem('sn_user_email') || ''
+
   const isShared = status === 'shared'
   const url      = note.shareToken ? sharePageUrl(note.shareToken) : null
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
   useEffect(() => {
     if (!note.shareToken) { setStatus('idle'); return }
@@ -50,7 +48,6 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
     getShareInfo(note.shareToken).then(info => setStatus(info ? 'shared' : 'idle'))
   }, [note.shareToken])
 
-  // Fetch invited users list
   useEffect(() => {
     if (!note.shareToken) return
     listInvites(note.shareToken).then(setInvitees).catch(() => {})
@@ -121,8 +118,7 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // A viewer is "live" if they pinged presence in the last 15s
-  const isLive = () => liveViewers.length > 0
+  const hasLiveViewers = liveViewers.length > 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end pt-12 pr-6" onClick={onClose}>
@@ -147,57 +143,64 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
         {tab === 'Share' && (
           <div>
             {/* Invite input */}
-            <div className="flex gap-2 p-4 pb-3">
+            <div className="flex gap-2 p-4 pb-4">
               <input
                 type="email"
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && sendInvite()}
-                placeholder="Invite by email"
+                placeholder="Email or group, separated by commas"
                 disabled={!isShared || inviteStatus === 'sending'}
-                className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 onClick={sendInvite}
                 disabled={!isShared || !inviteEmail.trim() || inviteStatus === 'sending'}
-                className="px-4 py-2 text-sm font-medium bg-brown-600 hover:bg-brown-700 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {inviteStatus === 'sending' ? '…' : inviteStatus === 'sent' ? 'Sent!' : 'Invite'}
+                {inviteStatus === 'sending' ? '…' : inviteStatus === 'sent' ? 'Sent!' : 'Share'}
               </button>
             </div>
 
             {/* People with access */}
-            <div className="px-4 pb-2">
-              <p className="text-xs text-gray-400 mb-2">People with access</p>
+            <div className="px-4 pb-3">
+              <p className="text-xs font-medium text-gray-500 mb-2">People with access</p>
 
-              {/* Owner */}
+              {/* Owner row */}
               <div className="flex items-center gap-3 py-1.5">
-                <div className="w-8 h-8 rounded-full bg-brown-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-semibold text-brown-600">
-                    {(note.title || 'U')[0].toUpperCase()}
-                  </span>
-                </div>
+                <Avatar email={ownerEmail} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    You <span className="font-normal text-gray-400">(Owner)</span>
+                    {ownerName} <span className="font-normal text-gray-400">(You)</span>
                   </p>
+                  {ownerEmail && (
+                    <p className="text-xs text-gray-400 truncate">{ownerEmail}</p>
+                  )}
                 </div>
-                <span className="text-xs text-gray-400 flex-shrink-0">Full access</span>
+                <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 flex-shrink-0">
+                  Full access <CaretDown className="w-3 h-3" />
+                </button>
               </div>
 
-              {/* Invitees */}
-              {invitees.map(inv => (
-                <div key={inv.email} className="flex items-center gap-3 py-1.5">
-                  <Avatar email={inv.email} avatarUrl={inv.avatarUrl} isLive={isLive()} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 truncate">{inv.email}</p>
-                    {isLive() && (
-                      <p className="text-xs text-green-500 font-medium">Viewing now</p>
-                    )}
+              {/* Invited users */}
+              {invitees.map(inv => {
+                const username = inv.email.split('@')[0]
+                return (
+                  <div key={inv.email} className="flex items-center gap-3 py-1.5">
+                    <Avatar email={inv.email} />
+                    <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
+                      <p className="text-sm text-gray-800 truncate">{username}</p>
+                      {hasLiveViewers
+                        ? <span className="text-xs text-green-500 font-medium flex-shrink-0">Viewing now</span>
+                        : <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full flex-shrink-0">Invited</span>
+                      }
+                    </div>
+                    <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 flex-shrink-0">
+                      Full access <CaretDown className="w-3 h-3" />
+                    </button>
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0 capitalize">{inv.permissions}</span>
-                </div>
-              ))}
+                )
+              })}
 
               {invitees.length === 0 && isShared && (
                 <p className="text-xs text-gray-400 italic py-1">No invites sent yet</p>
@@ -205,8 +208,8 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
             </div>
 
             {/* General access */}
-            <div className="px-4 pb-3 pt-1">
-              <p className="text-xs text-gray-400 mb-2">General access</p>
+            <div className="px-4 pb-3 pt-1 border-t border-gray-100">
+              <p className="text-xs font-medium text-gray-500 mb-2 mt-2">General access</p>
               <div>
                 <button
                   ref={accessAnchorRef}

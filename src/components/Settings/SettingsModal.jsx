@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Palette, TextT, Lightning, Keyboard, Database, Robot } from '@phosphor-icons/react'
+import { X, Palette, TextT, Keyboard, Database, Robot, User } from '@phosphor-icons/react'
 import { useUIStore } from '../../store/uiStore'
 import { electronService } from '../../services/electronService'
+import { gravatarUrl } from '../../utils/gravatar'
 
 const SECTIONS = [
+  { id: 'profile', label: 'Profile', icon: User },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'editor', label: 'Editor', icon: TextT },
   { id: 'ai', label: 'AI', icon: Robot },
@@ -36,9 +38,19 @@ export default function SettingsModal() {
   const autoSaveInterval = useUIStore(s => s.autoSaveInterval)
   const setAutoSaveInterval = useUIStore(s => s.setAutoSaveInterval)
 
-  const [activeSection, setActiveSection] = useState('appearance')
+  const [activeSection, setActiveSection] = useState('profile')
   const [apiKey, setApiKey] = useState('')
   const [apiKeySaved, setApiKeySaved] = useState(false)
+  const [profileName, setProfileName] = useState(() => localStorage.getItem('sn_user_name') || '')
+  const [profileEmail, setProfileEmail] = useState(() => localStorage.getItem('sn_user_email') || '')
+  const [profileSaved, setProfileSaved] = useState(false)
+
+  const saveProfile = () => {
+    localStorage.setItem('sn_user_name', profileName.trim())
+    localStorage.setItem('sn_user_email', profileEmail.trim().toLowerCase())
+    setProfileSaved(true)
+    setTimeout(() => setProfileSaved(false), 2000)
+  }
 
   const handleSave = async () => {
     const settings = { theme, fontSize, autoSaveInterval }
@@ -105,6 +117,46 @@ export default function SettingsModal() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+              {activeSection === 'profile' && (
+                <>
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-14 h-14 rounded-full overflow-hidden bg-brown-100 flex-shrink-0 flex items-center justify-center">
+                      {profileEmail
+                        ? <img src={gravatarUrl(profileEmail, 56)} alt="avatar" className="w-full h-full object-cover" onError={e => { e.target.style.display='none' }} />
+                        : <span className="text-xl font-semibold text-brown-600">{(profileName || '?')[0].toUpperCase()}</span>
+                      }
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{profileName || 'Your Name'}</p>
+                      <p className="text-xs text-gray-400">{profileEmail || 'your@email.com'}</p>
+                    </div>
+                  </div>
+                  <SettingRow label="Display Name" description="Shown when you share notes with others">
+                    <input
+                      value={profileName}
+                      onChange={e => setProfileName(e.target.value)}
+                      placeholder="Your name"
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100"
+                    />
+                  </SettingRow>
+                  <SettingRow label="Email" description="Used for your avatar (Gravatar) in shared notes">
+                    <input
+                      type="email"
+                      value={profileEmail}
+                      onChange={e => setProfileEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100"
+                    />
+                  </SettingRow>
+                  <button
+                    onClick={saveProfile}
+                    className="px-4 py-2 text-sm font-medium bg-brown-600 hover:bg-brown-700 text-white rounded-lg transition-colors"
+                  >
+                    {profileSaved ? '✓ Saved' : 'Save Profile'}
+                  </button>
+                </>
+              )}
+
               {activeSection === 'appearance' && (
                 <>
                   <SettingRow label="Theme" description="Choose light, dark, or follow system">
