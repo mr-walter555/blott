@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react'
-import { io } from 'socket.io-client'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -14,7 +13,7 @@ export default function SharePage({ token }) {
   const [note, setNote]       = useState(null)
   const [status, setStatus]   = useState('loading')
   const [viewers, setViewers] = useState([])
-  const socketRef             = useRef(null)
+  const pingRef               = useRef(null)
 
   useEffect(() => {
     fetch(`${API_URL}/api/share/${token}/content`)
@@ -23,17 +22,27 @@ export default function SharePage({ token }) {
       .catch(() => setStatus('notfound'))
   }, [token])
 
-  // Join socket room so owner can see this viewer as "viewing now"
+  // Ping presence every 8s and fetch current viewers
   useEffect(() => {
     if (status !== 'found') return
     const { userId, displayName } = getViewerIdentity()
-    const socket = io(API_URL, { transports: ['websocket'] })
-    socketRef.current = socket
-    socket.on('connect', () => socket.emit('join', { shareToken: token, userId, displayName }))
-    socket.on('users', users => setViewers(users))
-    socket.on('user:joined', user => setViewers(prev => prev.find(u => u.userId === user.userId) ? prev : [...prev, user]))
-    socket.on('user:left', ({ userId: id }) => setViewers(prev => prev.filter(u => u.userId !== id)))
-    return () => { socket.emit('leave', { shareToken: token, userId }); socket.disconnect() }
+
+    const ping = () => {
+      fetch(`${API_URL}/api/share/${token}/viewers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, displayName }),
+      }).catch(() => {})
+
+      fetch(`${API_URL}/api/share/${token}/viewers`)
+        .then(r => r.ok ? r.json() : [])
+        .then(setViewers)
+        .catch(() => {})
+    }
+
+    ping()
+    pingRef.current = setInterval(ping, 8000)
+    return () => clearInterval(pingRef.current)
   }, [status, token])
 
   if (status === 'loading') return (
@@ -61,11 +70,10 @@ export default function SharePage({ token }) {
         </div>
         <span className="text-white font-semibold text-sm">Smart Notepad</span>
 
-        {/* Live viewer bubbles */}
         {viewers.length > 0 && (
           <div className="flex items-center gap-1 ml-2">
             {viewers.slice(0, 5).map(v => (
-              <div key={v.userId} title={v.displayName}
+              <div key={v.userId} title={`${v.displayName} is viewing`}
                 className="w-7 h-7 rounded-full border-2 border-white/40 flex items-center justify-center text-xs font-bold text-white"
                 style={{ background: v.color }}>
                 {v.displayName[0].toUpperCase()}

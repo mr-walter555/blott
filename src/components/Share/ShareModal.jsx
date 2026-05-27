@@ -34,11 +34,15 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
   const [accessOpen, setAccessOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteStatus, setInviteStatus] = useState('idle')
-  const [invitees, setInvitees] = useState([])
+  const [invitees, setInvitees]   = useState([])
+  const [liveViewers, setLiveViewers] = useState([])
   const accessAnchorRef = useRef(null)
+  const pollRef = useRef(null)
 
   const isShared = status === 'shared'
   const url      = note.shareToken ? sharePageUrl(note.shareToken) : null
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
   useEffect(() => {
     if (!note.shareToken) { setStatus('idle'); return }
@@ -51,6 +55,20 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
     if (!note.shareToken) return
     listInvites(note.shareToken).then(setInvitees).catch(() => {})
   }, [note.shareToken, inviteStatus])
+
+  // Poll live viewers every 8s
+  useEffect(() => {
+    if (!note.shareToken || !isShared) return
+    const poll = () => {
+      fetch(`${API_URL}/api/share/${note.shareToken}/viewers`)
+        .then(r => r.ok ? r.json() : [])
+        .then(setLiveViewers)
+        .catch(() => {})
+    }
+    poll()
+    pollRef.current = setInterval(poll, 8000)
+    return () => clearInterval(pollRef.current)
+  }, [note.shareToken, isShared])
 
   const enableShare = async () => {
     setStatus('loading')
@@ -103,10 +121,8 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Match an invitee to a live collaborator by display name or email prefix
-  const isLive = (email) => collaborators.some(c =>
-    c.displayName?.toLowerCase() === email?.split('@')[0]?.toLowerCase()
-  )
+  // A viewer is "live" if they pinged presence in the last 15s
+  const isLive = () => liveViewers.length > 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end pt-12 pr-6" onClick={onClose}>
@@ -170,21 +186,18 @@ export default function ShareModal({ note, onClose, collaborators = [] }) {
               </div>
 
               {/* Invitees */}
-              {invitees.map(inv => {
-                const live = isLive(inv.email)
-                return (
-                  <div key={inv.email} className="flex items-center gap-3 py-1.5">
-                    <Avatar email={inv.email} avatarUrl={inv.avatarUrl} isLive={live} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-800 truncate">{inv.email}</p>
-                      {live && (
-                        <p className="text-xs text-green-500 font-medium">Viewing now</p>
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0 capitalize">{inv.permissions}</span>
+              {invitees.map(inv => (
+                <div key={inv.email} className="flex items-center gap-3 py-1.5">
+                  <Avatar email={inv.email} avatarUrl={inv.avatarUrl} isLive={isLive()} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 truncate">{inv.email}</p>
+                    {isLive() && (
+                      <p className="text-xs text-green-500 font-medium">Viewing now</p>
+                    )}
                   </div>
-                )
-              })}
+                  <span className="text-xs text-gray-400 flex-shrink-0 capitalize">{inv.permissions}</span>
+                </div>
+              ))}
 
               {invitees.length === 0 && isShared && (
                 <p className="text-xs text-gray-400 italic py-1">No invites sent yet</p>
