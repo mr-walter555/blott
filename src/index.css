@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+@import 'highlight.js/styles/atom-one-light.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+    font-family: "Google Sans Flex", sans-serif;
+    font-optical-sizing: auto;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 dark:bg-gray-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-300 dark:bg-gray-600;
+  }
+
+  ::selection {
+    @apply bg-brown-200 dark:bg-brown-800;
+  }
+}
+
+@layer components {
+  .sidebar-item {
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer transition-all duration-150 select-none;
+  }
+
+  .sidebar-item.active {
+    @apply bg-brown-50 dark:bg-brown-950/60 text-brown-600 dark:text-brown-400;
+  }
+
+  .note-card {
+    @apply relative p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700 cursor-pointer transition-all duration-200 select-none;
+  }
+
+  .note-card.selected {
+    @apply border-brown-300 dark:border-brown-700 bg-brown-50/50 dark:bg-brown-950/30;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-brown-600 hover:bg-brown-700 text-white shadow-sm;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100;
+  }
+
+  .btn-icon {
+    @apply p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-150 cursor-pointer;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-gray-800 border border-transparent focus:border-brown-300 dark:focus:border-brown-600 focus:outline-none focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all;
+  }
+
+  .glass {
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl;
+  }
+
+  .divider {
+    @apply border-t border-gray-100 dark:border-gray-800;
+  }
+}
+
+/* TipTap editor styles */
+.tiptap-editor {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.tiptap-editor .ProseMirror {
+  outline: none;
+  color: inherit;
+  word-break: break-word;
+}
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+.dark .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: #4b5563;
+}
+
+.tiptap-editor .ProseMirror h1 { @apply text-2xl font-bold mb-3 mt-5 leading-tight; }
+.tiptap-editor .ProseMirror h2 { @apply text-xl font-semibold mb-2 mt-4 leading-tight; }
+.tiptap-editor .ProseMirror h3 { @apply text-lg font-semibold mb-2 mt-3 leading-snug; }
+.tiptap-editor .ProseMirror p { @apply mb-3 leading-relaxed; }
+.tiptap-editor .ProseMirror strong { @apply font-semibold; }
+.tiptap-editor .ProseMirror em { @apply italic; }
+.tiptap-editor .ProseMirror u { @apply underline; }
+.tiptap-editor .ProseMirror s { @apply line-through; }
+.tiptap-editor .ProseMirror mark { @apply bg-yellow-200 dark:bg-yellow-800/60 rounded px-0.5; }
+
+.tiptap-editor .ProseMirror code {
+  @apply bg-gray-100 dark:bg-gray-800 rounded px-1.5 py-0.5 text-sm font-mono text-pink-600 dark:text-pink-400;
+}
+
+.tiptap-editor .ProseMirror pre {
+  @apply bg-[#fafafa] dark:bg-[#1e1e2e] rounded-xl p-4 my-4 overflow-x-auto border border-gray-200 dark:border-gray-800;
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.tiptap-editor .ProseMirror pre code {
+  @apply bg-transparent text-sm leading-relaxed;
+  font-family: inherit;
+}
+
+/* dark mode: override atom-one-light tokens with dark equivalents */
+.dark .tiptap-editor .ProseMirror pre code { color: #cdd6f4; }
+.dark .tiptap-editor .ProseMirror pre .hljs-keyword  { color: #cba6f7; }
+.dark .tiptap-editor .ProseMirror pre .hljs-string   { color: #a6e3a1; }
+.dark .tiptap-editor .ProseMirror pre .hljs-comment  { color: #6c7086; font-style: italic; }
+.dark .tiptap-editor .ProseMirror pre .hljs-number   { color: #fab387; }
+.dark .tiptap-editor .ProseMirror pre .hljs-function { color: #89b4fa; }
+.dark .tiptap-editor .ProseMirror pre .hljs-title    { color: #89b4fa; }
+.dark .tiptap-editor .ProseMirror pre .hljs-params   { color: #cdd6f4; }
+.dark .tiptap-editor .ProseMirror pre .hljs-attr     { color: #89dceb; }
+.dark .tiptap-editor .ProseMirror pre .hljs-built_in { color: #f38ba8; }
+.dark .tiptap-editor .ProseMirror pre .hljs-tag      { color: #f38ba8; }
+.dark .tiptap-editor .ProseMirror pre .hljs-name     { color: #cba6f7; }
+.dark .tiptap-editor .ProseMirror pre .hljs-variable { color: #cdd6f4; }
+
+.tiptap-editor .ProseMirror blockquote {
+  @apply border-l-4 border-brown-400 dark:border-brown-600 pl-4 my-3 text-gray-600 dark:text-gray-400 italic;
+}
+
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol {
+  @apply pl-6 mb-3 space-y-1;
+}
+
+.tiptap-editor .ProseMirror ul { list-style-type: disc; }
+.tiptap-editor .ProseMirror ol { list-style-type: decimal; }
+
+.tiptap-editor .ProseMirror li { @apply leading-relaxed; }
+
+.tiptap-editor .ProseMirror ul[data-type="taskList"] { list-style-type: none; @apply pl-0; }
+.tiptap-editor .ProseMirror ul[data-type="taskList"] li {
+  @apply flex items-start gap-2 my-1;
+}
+.tiptap-editor .ProseMirror ul[data-type="taskList"] li > label {
+  @apply flex items-center mt-0.5;
+}
+.tiptap-editor .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  @apply w-4 h-4 rounded text-brown-600 cursor-pointer;
+}
+.tiptap-editor .ProseMirror ul[data-type="taskList"] li > div { @apply flex-1; }
+.tiptap-editor .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  @apply line-through text-gray-400 dark:text-gray-600;
+}
+
+.tiptap-editor .ProseMirror hr {
+  @apply border-gray-200 dark:border-gray-700 my-6;
+}
+
+.tiptap-editor .ProseMirror a {
+  @apply text-brown-600 dark:text-brown-400 underline cursor-pointer;
+}
+
+.tiptap-editor .ProseMirror .editor-image {
+  @apply rounded-xl my-3 max-w-full h-auto block shadow-sm border border-gray-200 dark:border-gray-700;
+}
+
+.tiptap-editor .ProseMirror .editor-image.ProseMirror-selectednode {
+  @apply ring-2 ring-brown-500 ring-offset-2;
+}
+
+/* Bubble menu */
+.tippy-box[data-theme~='ai-menu'] {
+  @apply bg-transparent;
+}

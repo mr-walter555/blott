@@ -1,0 +1,42 @@
+import { create } from 'zustand'
+
+export const useUIStore = create((set, get) => ({
+  theme: 'light',
+  resolvedTheme: 'light',
+  sidebarCollapsed: false,
+  commandPaletteOpen: false,
+  settingsOpen: false,
+  activeView: 'all',
+  activeWorkspaceId: null,
+  searchQuery: '',
+  fontSize: 'medium',
+  autoSaveInterval: 2000,
+  fontFamily: 'Google Sans Flex',
+  shareModalOpen: false,
+  aiLoading: false,
+  aiResult: null,
+
+  setTheme: (theme) => set({ theme }),
+  setResolvedTheme: (resolvedTheme) => set({ resolvedTheme }),
+  toggleSidebar: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+  openCommandPalette: () => set({ commandPaletteOpen: true }),
+  closeCommandPalette: () => set({ commandPaletteOpen: false }),
+  openSettings: () => set({ settingsOpen: true }),
+  closeSettings: () => set({ settingsOpen: false }),
+  setActiveView: (view) => set({ activeView: view, activeWorkspaceId: null }),
+  setActiveWorkspace: (id) => set({ activeWorkspaceId: id, activeView: 'workspace' }),
+  setSearchQuery: (q) => set({ searchQuery: q }),
+  setFontSize: (fontSize) => set({ fontSize }),
+  setAutoSaveInterval: (ms) => set({ autoSaveInterval: ms }),
+  openShareModal: () => set({ shareModalOpen: true }),
+  closeShareModal: () => set({ shareModalOpen: false }),
+  setAILoading: (v) => set({ aiLoading: v }),
+  setAIResult: (r) => set({ aiResult: r }),
+
+  applySettings: (settings) => set({
+    theme: settings.theme ?? 'system',
+    fontSize: settings.fontSize ?? 'medium',
+    autoSaveInterval: settings.autoSaveInterval ?? 2000,
+    fontFamily: settings.fontFamily ?? 'Google Sans Flex',
+  }),
+}))
