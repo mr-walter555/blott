@@ -51,7 +51,7 @@ export default function ShareModal({ note, onClose }) {
   useEffect(() => {
     if (!note.shareToken) return
     listInvites(note.shareToken).then(setInvitees).catch(() => {})
-  }, [note.shareToken, inviteStatus])
+  }, [note.shareToken])
 
   // Poll live viewers every 8s
   useEffect(() => {
@@ -105,9 +105,14 @@ export default function ShareModal({ note, onClose }) {
       await createInvite({ noteId: note.id, shareToken: note.shareToken, email: inviteEmail.trim(), noteTitle: note.title })
       setInviteEmail('')
       setInviteStatus('sent')
+      // Directly refresh the list — avoids race condition from effect re-running on status changes
+      const updated = await listInvites(note.shareToken)
+      setInvitees(updated)
       setTimeout(() => setInviteStatus('idle'), 3000)
-    } catch {
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to send invite')
       setInviteStatus('idle')
+      setTimeout(() => setErrorMsg(''), 4000)
     }
   }
 
@@ -143,23 +148,27 @@ export default function ShareModal({ note, onClose }) {
         {tab === 'Share' && (
           <div>
             {/* Invite input */}
-            <div className="flex gap-2 p-4 pb-4">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && sendInvite()}
-                placeholder="Email or group, separated by commas"
-                disabled={!isShared || inviteStatus === 'sending'}
-                className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <button
-                onClick={sendInvite}
-                disabled={!isShared || !inviteEmail.trim() || inviteStatus === 'sending'}
-                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {inviteStatus === 'sending' ? '…' : inviteStatus === 'sent' ? 'Sent!' : 'Share'}
-              </button>
+            <div className="p-4 pb-4">
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendInvite()}
+                  placeholder="Email or group, separated by commas"
+                  disabled={!isShared || inviteStatus === 'sending'}
+                  className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button
+                  onClick={sendInvite}
+                  disabled={!isShared || !inviteEmail.trim() || inviteStatus === 'sending'}
+                  className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {inviteStatus === 'sending' ? '…' : inviteStatus === 'sent' ? 'Sent!' : 'Share'}
+                </button>
+              </div>
+              {errorMsg && <p className="mt-1.5 text-xs text-red-500">{errorMsg}</p>}
+              {!isShared && <p className="mt-1.5 text-xs text-gray-400">Enable sharing below to invite people.</p>}
             </div>
 
             {/* People with access */}
