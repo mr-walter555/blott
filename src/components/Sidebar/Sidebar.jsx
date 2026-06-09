@@ -100,26 +100,36 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* New Note + Search */}
-      <div className={`pt-1 pb-3 space-y-1.5 transition-all duration-250 ${c ? 'px-1.5' : 'px-3'}`}>
-        <button
-          onClick={handleNewNote}
-          title="New Note"
-          className={`w-full flex items-center rounded-lg bg-brown-600 hover:bg-brown-700 text-white text-sm font-medium transition-colors shadow-sm ${c ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
-        >
-          <Plus className="w-5 h-5 text-white flex-shrink-0" />
-          <FadeLabel show={!c}>New Note</FadeLabel>
-        </button>
-        <button
-          onClick={openCommandPalette}
-          title="Quick search"
-          className={`w-full flex items-center rounded-lg text-sm text-gray-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${c ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
-        >
-          <MagnifyingGlass className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
-          <FadeLabel show={!c} className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="truncate">Quick search…</span>
-          </FadeLabel>
-        </button>
+      {/* Search + New Note (compact row) */}
+      <div className={`pt-1 pb-3 transition-all duration-250 ${c ? 'px-1.5 space-y-1.5' : 'px-3'}`}>
+        {c ? (
+          <>
+            <button onClick={openCommandPalette} title="Quick search" className="w-full flex items-center justify-center p-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <MagnifyingGlass className="w-5 h-5 text-black dark:text-white" />
+            </button>
+            <button onClick={handleNewNote} title="New Note" className="w-full flex items-center justify-center p-2 rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors">
+              <Plus className="w-5 h-5 text-white" />
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openCommandPalette}
+              title="Quick search  ⌘K"
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors min-w-0"
+            >
+              <MagnifyingGlass className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <span className="truncate text-gray-400 dark:text-gray-500">Search notes…</span>
+            </button>
+            <button
+              onClick={handleNewNote}
+              title="New Note  Ctrl+N"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 text-white" weight="bold" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mx-3 border-t border-gray-200 dark:border-gray-800 mb-1" />
