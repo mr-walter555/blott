@@ -195,10 +195,15 @@ export default function CommandPalette() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400">
-            <span><kbd className="font-mono">↑↓</kbd> navigate</span>
-            <span><kbd className="font-mono">↵</kbd> select</span>
-            <span><kbd className="font-mono">Esc</kbd> close</span>
+          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400">
+            <div className="flex items-center gap-4">
+              <span><kbd className="font-mono">↑↓</kbd> navigate</span>
+              <span><kbd className="font-mono">↵</kbd> select</span>
+              <span><kbd className="font-mono">Esc</kbd> close</span>
+            </div>
+            {query.trim() && noteResults.length > 0 && (
+              <span className="tabular-nums">{noteResults.length} note{noteResults.length !== 1 ? 's' : ''} found</span>
+            )}
           </div>
         </div>
       </motion.div>

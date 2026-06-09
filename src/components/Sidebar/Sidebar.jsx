@@ -166,10 +166,10 @@ export default function Sidebar() {
                           value={renameValue}
                           onChange={e => setRenameValue(e.target.value)}
                           onKeyDown={e => {
-                            if (e.key === 'Enter') { updateNote(note.id, { title: renameValue }); setRenamingId(null) }
+                            if (e.key === 'Enter') { if (renameValue.trim()) updateNote(note.id, { title: renameValue.trim() }); setRenamingId(null) }
                             if (e.key === 'Escape') setRenamingId(null)
                           }}
-                          onBlur={() => { updateNote(note.id, { title: renameValue }); setRenamingId(null) }}
+                          onBlur={() => { if (renameValue.trim()) updateNote(note.id, { title: renameValue.trim() }); setRenamingId(null) }}
                           className="flex-1 text-sm bg-white border border-brown-300 rounded px-1.5 py-0.5 outline-none text-gray-900"
                           autoFocus
                         />
@@ -193,7 +193,8 @@ export default function Sidebar() {
                         </span>
                         <button
                           onClick={e => openMenu(e, note)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all flex-shrink-0"
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all flex-shrink-0 focus:opacity-100"
+                          tabIndex={0}
                         >
                           <DotsThree className="w-4 h-4 text-gray-500" weight="bold" />
                         </button>
@@ -279,7 +280,7 @@ export default function Sidebar() {
               </div>
 
               <button
-                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null) }}
+                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null); toast(note.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: '⭐' }) }}
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
                 <Star className={`w-4 h-4 ${note.favorite ? 'text-yellow-400' : 'text-gray-400 dark:text-gray-500'}`} weight={note.favorite ? 'fill' : 'regular'} />
@@ -287,7 +288,7 @@ export default function Sidebar() {
               </button>
 
               <button
-                onClick={() => { updateNote(note.id, { pinned: !note.pinned }); setMenu(null) }}
+                onClick={() => { updateNote(note.id, { pinned: !note.pinned }); setMenu(null); toast(note.pinned ? 'Note unpinned' : 'Note pinned', { icon: '📌' }) }}
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
                 <PushPin className={`w-4 h-4 ${note.pinned ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`} weight={note.pinned ? 'fill' : 'regular'} />

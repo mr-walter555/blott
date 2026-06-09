@@ -78,10 +78,11 @@ export default function NoteEditor({ noteId }) {
 
   const [title, setTitle]     = useState(note?.title || '')
   const [content, setContent] = useState(note?.content || '')
+  const [saveStatus, setSaveStatus] = useState('saved') // 'saved' | 'unsaved' | 'saving' | 'error'
   const [menuPos,   setMenuPos]   = useState(null)
   const [aiResult,  setAiResult]  = useState(null)
-  const [aiLoadingVer, setAiLoadingVer] = useState(0) // increment to force re-render
-  const aiLoadingRef = useRef(null) // source of truth — immune to external state resets
+  const [aiLoadingVer, setAiLoadingVer] = useState(0)
+  const aiLoadingRef = useRef(null)
   const menuRef = useRef(null)
 
   const aiLoading = aiLoadingRef.current
@@ -111,7 +112,11 @@ export default function NoteEditor({ noteId }) {
     return () => window.removeEventListener('keydown', handler)
   }, [focusMode, toggleFocusMode])
 
-  const saveNow = useAutoSave(noteId, content, title, note?.shareToken)
+  const saveNow = useAutoSave(noteId, content, title, note?.shareToken, {
+    onSaving: () => setSaveStatus('saving'),
+    onSaved:  () => setSaveStatus('saved'),
+    onError:  () => setSaveStatus('error'),
+  })
 
   useEffect(() => {
     const handler = (e) => {
@@ -182,6 +187,7 @@ export default function NoteEditor({ noteId }) {
     },
     onUpdate: ({ editor }) => {
       setContent(editor.getHTML())
+      setSaveStatus('unsaved')
     },
   })
 
@@ -283,7 +289,7 @@ export default function NoteEditor({ noteId }) {
     setAiResult(null)
   }
 
-  const handleTitleChange = (e) => { setTitle(e.target.value) }
+  const handleTitleChange = (e) => { setTitle(e.target.value); setSaveStatus('unsaved') }
 
   const handleContextMenu = (e) => {
     if (!editor) return
@@ -384,7 +390,17 @@ export default function NoteEditor({ noteId }) {
             <span>{wordCount} words</span>
             <span>{charCount} chars</span>
           </div>
-          <span>Auto-saved</span>
+          <span className={
+            saveStatus === 'error'   ? 'text-red-400' :
+            saveStatus === 'unsaved' ? 'text-amber-400' :
+            saveStatus === 'saving'  ? 'text-gray-400' :
+            'text-gray-400'
+          }>
+            {saveStatus === 'error'   ? 'Failed to save' :
+             saveStatus === 'unsaved' ? 'Unsaved changes' :
+             saveStatus === 'saving'  ? 'Saving…' :
+             'Auto-saved'}
+          </span>
         </div>
       </div>
     </div>
