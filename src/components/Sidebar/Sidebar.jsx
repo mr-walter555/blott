@@ -116,9 +116,9 @@ export default function Sidebar() {
           className={`w-full flex items-center rounded-lg text-sm text-gray-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${c ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
         >
           <MagnifyingGlass className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
-          <FadeLabel show={!c} className="flex items-center flex-1 min-w-0">
-            <span className="flex-1">Quick search…</span>
-            <span className="text-xs opacity-50 font-mono">⌘K</span>
+          <FadeLabel show={!c} className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="truncate">Quick search…</span>
+            <span className="text-xs opacity-50 font-mono flex-shrink-0">⌘K</span>
           </FadeLabel>
         </button>
       </div>
