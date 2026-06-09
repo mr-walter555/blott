@@ -117,8 +117,8 @@ export default function Sidebar() {
         >
           <MagnifyingGlass className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
           <FadeLabel show={!c} className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="truncate">Quick search…</span>
             <span className="text-xs opacity-50 font-mono flex-shrink-0">⌘K</span>
+            <span className="truncate">Quick search…</span>
           </FadeLabel>
         </button>
       </div>
