@@ -4,6 +4,7 @@ import { useNotesStore } from '../store/notesStore'
 import { useTheme } from '../hooks/useTheme'
 import { getColorClasses, NOTE_COLORS } from '../utils/noteColors'
 import { stripHtml } from '../utils/helpers'
+import { sanitizeNoteHtml } from '../utils/sanitizeHtml'
 
 export default function StickyNote({ noteId }) {
   useTheme()
@@ -97,7 +98,7 @@ export default function StickyNote({ noteId }) {
           {note.content ? (
             <div
               className="tiptap-preview"
-              dangerouslySetInnerHTML={{ __html: note.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(note.content) }}
             />
           ) : (
             <p className="text-gray-400 dark:text-gray-600 italic">Empty note</p>

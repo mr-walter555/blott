@@ -12,6 +12,7 @@ import { stripHtml } from '../../utils/helpers'
 
 const STATIC_COMMAND_DEFS = [
   { id: 'new-note',        label: 'New Note',      icon: Plus,     category: 'Actions'  },
+  { id: 'ask-ai',          label: 'Ask your notes', icon: Sparkle, category: 'Actions'  },
   { id: 'view-all',        label: 'All Notes',     icon: FileText, category: 'Navigate' },
   { id: 'view-favorites',  label: 'Favorites',     icon: Star,     category: 'Navigate' },
   { id: 'view-pinned',     label: 'Pinned',        icon: PushPin,  category: 'Navigate' },
@@ -32,6 +33,7 @@ export default function CommandPalette() {
   const closeCommandPalette = useUIStore(s => s.closeCommandPalette)
   const setActiveView = useUIStore(s => s.setActiveView)
   const openSettings = useUIStore(s => s.openSettings)
+  const openAskAI = useUIStore(s => s.openAskAI)
   const setTheme = useUIStore(s => s.setTheme)
   const createNote = useNotesStore(s => s.createNote)
   const setSelectedNote = useNotesStore(s => s.setSelectedNote)
@@ -45,11 +47,12 @@ export default function CommandPalette() {
           : def.id === 'view-pinned'    ? () => setActiveView('pinned')
           : def.id === 'view-archived'  ? () => setActiveView('archived')
           : def.id === 'view-trash'     ? () => setActiveView('trash')
+          : def.id === 'ask-ai'         ? () => openAskAI()
           : def.id === 'settings'       ? () => openSettings()
           : def.id === 'theme-light'    ? () => setTheme('light')
           : def.id === 'theme-dark'     ? () => setTheme('dark')
           : /* theme-system */            () => setTheme('system'),
-  })), [createNote, setSelectedNote, setActiveView, openSettings, setTheme])
+  })), [createNote, setSelectedNote, setActiveView, openSettings, openAskAI, setTheme])
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -130,10 +133,10 @@ export default function CommandPalette() {
 
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: -10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: -10 }}
-        transition={{ duration: 0.15 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.08 }}
         className="w-full max-w-xl pointer-events-auto"
       >
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
@@ -173,7 +176,7 @@ export default function CommandPalette() {
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left ${
                           isSelected
                             ? 'bg-brown-50 dark:bg-brown-950/40 text-brown-600 dark:text-brown-400'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                         }`}
                       >
                         <item.icon className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />

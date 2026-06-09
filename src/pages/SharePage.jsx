@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { API_URL } from '../config'
+import { sanitizeNoteHtml } from '../utils/sanitizeHtml'
 
 function getViewerIdentity() {
   let userId = localStorage.getItem('collab_userId')
@@ -99,7 +100,7 @@ export default function SharePage({ token }) {
         </p>
         <div
           className="prose prose-gray max-w-none text-gray-800 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: note.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(note.content) }}
         />
       </div>
     </div>

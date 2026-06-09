@@ -6,7 +6,7 @@ export function useKeyboardShortcuts() {
   const createNote = useNotesStore(s => s.createNote)
   const openCommandPalette = useUIStore(s => s.openCommandPalette)
   const openSettings = useUIStore(s => s.openSettings)
-  const openShareModal = useUIStore(s => s.openShareModal)
+  const openAskAI = useUIStore(s => s.openAskAI)
 
   useEffect(() => {
     const handler = async (e) => {
@@ -28,26 +28,25 @@ export function useKeyboardShortcuts() {
         openSettings()
       }
 
-      if (ctrl && e.shiftKey && e.key.toLowerCase() === 's') {
+      if (ctrl && !e.shiftKey && e.key === 'f') {
         e.preventDefault()
-        const { notes, selectedNoteId } = useNotesStore.getState()
-        const note = notes[selectedNoteId]
-        if (note && !note.trashed) openShareModal()
+        openCommandPalette()
       }
 
-      if (ctrl && e.key === 'f') {
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === 'a') {
         e.preventDefault()
-        document.querySelector('[data-search-input]')?.focus()
+        openAskAI()
       }
 
       if (e.key === 'Escape') {
-        const { commandPaletteOpen, settingsOpen, closeCommandPalette, closeSettings } = useUIStore.getState()
+        const { commandPaletteOpen, settingsOpen, askAIOpen, closeCommandPalette, closeSettings, closeAskAI } = useUIStore.getState()
         if (commandPaletteOpen) closeCommandPalette()
         else if (settingsOpen) closeSettings()
+        else if (askAIOpen) closeAskAI()
       }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [createNote, openCommandPalette, openSettings])
+  }, [createNote, openCommandPalette, openSettings, openAskAI])
 }

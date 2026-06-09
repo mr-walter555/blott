@@ -1,9 +1,9 @@
 export function stripHtml(html) {
   if (!html) return ''
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  // textContent both removes tags and decodes entities (&nbsp;, &amp;, etc.) —
+  // a regex-only strip leaves entities as literal text (e.g. "&nbsp;&nbsp;…")
+  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent || ''
+  return text.replace(/\s+/g, ' ').trim()
 }
 
 export function truncate(str, len = 120) {

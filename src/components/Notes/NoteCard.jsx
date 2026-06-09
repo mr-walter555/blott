@@ -50,14 +50,13 @@ export default function NoteCard({ note, selected, onClick }) {
 
       {/* Preview */}
       {preview && (
-        <p className="text-xs text-gray-500 dark:text-gray-500 leading-relaxed mb-2 line-clamp-2">
+        <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
           {preview}
         </p>
       )}
 
-
       {/* Date */}
-      <p className="text-xs text-gray-400 dark:text-gray-600">{formatDate(note.updatedAt)}</p>
+      <p className="text-xs text-gray-300 dark:text-gray-600 mt-2">{formatDate(note.updatedAt)}</p>
 
       {/* Context menu */}
       <DropdownMenu
@@ -66,7 +65,7 @@ export default function NoteCard({ note, selected, onClick }) {
         onClose={() => setMenuOpen(false)}
         align="right"
       >
-        <div onClick={e => e.stopPropagation()} className="bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 w-44">
+        <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1.5 w-44">
           {isTrash ? (
             <>
               <MenuItem icon={ArrowCounterClockwise} label="Restore" onClick={() => { restoreNote(note.id); setMenuOpen(false) }} />
@@ -85,7 +84,7 @@ export default function NoteCard({ note, selected, onClick }) {
                 label={note.favorite ? 'Remove favorite' : 'Add to favorites'}
                 onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenuOpen(false) }}
               />
-              <div className="mx-2 my-1 border-t border-gray-100" />
+              <div className="mx-2 my-1 border-t border-gray-100 dark:border-gray-700" />
               <MenuItem
                 icon={Archive}
                 label={note.archived ? 'Unarchive' : 'Archive'}
@@ -106,8 +105,8 @@ function MenuItem({ icon: Icon, label, onClick, danger }) {
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors ${
         danger
-          ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+          ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
       }`}
     >
       <Icon className="w-4 h-4" />

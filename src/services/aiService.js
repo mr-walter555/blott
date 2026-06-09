@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { API_URL } from '../config'
 const BASE = `${API_URL}/api/ai`
 
 const api = axios.create({ baseURL: BASE, timeout: 30000 })
@@ -10,12 +10,9 @@ export async function processText(action, text) {
   return data.result
 }
 
-export async function detectTasks(content) {
-  const { data } = await api.post('/detect-tasks', { content })
-  return data
-}
-
-export async function generateInsights(content) {
-  const { data } = await api.post('/insights', { content })
+// `notes` is the small, pre-ranked list of { id, title, excerpt } the caller
+// judged relevant — the backend never sees the user's full note collection.
+export async function askNotes(question, notes) {
+  const { data } = await api.post('/ask', { question, notes })
   return data
 }

@@ -2,21 +2,40 @@ import {
   TextB, TextItalic, TextUnderline, TextStrikethrough,
   TextHOne, TextHTwo, TextHThree, List, ListNumbers,
   CheckSquare, Quotes, Code, CodeBlock, Link, Highlighter,
-  ArrowCounterClockwise, ArrowClockwise, Minus, Image
+  ArrowCounterClockwise, ArrowClockwise, Minus, Image,
+  TextAlignLeft, TextAlignCenter, TextAlignRight, TextAlignJustify
 } from '@phosphor-icons/react'
 
 export default function EditorToolbar({ editor }) {
   if (!editor) return null
 
-  const insertImage = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const readAsDataURL = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      editor.chain().focus().setImage({ src: ev.target.result, alt: file.name }).run()
-    }
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
+  })
+
+  const insertImages = async (e) => {
+    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'))
     e.target.value = ''
+    if (!files.length || !editor) return
+
+    for (const file of files) {
+      try {
+        const src = await readAsDataURL(file)
+        // Insert the image plus an empty paragraph after it — TipTap leaves the
+        // freshly-inserted image node selected, and inserting again would replace
+        // that selection (i.e. swap out the image) instead of adding a new one.
+        // Landing the cursor in a trailing paragraph keeps each insert additive.
+        editor.chain().focus().insertContent([
+          { type: 'image', attrs: { src, alt: file.name } },
+          { type: 'paragraph' },
+        ]).run()
+      } catch (err) {
+        console.error('Failed to read image file:', file.name, err)
+      }
+    }
   }
 
   const ToolBtn = ({ onClick, active, disabled, title, children }) => (
@@ -27,7 +46,7 @@ export default function EditorToolbar({ editor }) {
       className={`p-2 rounded-md text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
         active
           ? 'bg-brown-100 dark:bg-brown-950/60 text-brown-600 dark:text-brown-400'
-          : 'text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300'
+          : 'text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-300'
       }`}
     >
       {children}
@@ -90,6 +109,21 @@ export default function EditorToolbar({ editor }) {
 
       <Divider />
 
+      <ToolBtn onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align Left (Ctrl+Shift+L)">
+        <TextAlignLeft className="w-5 h-5 text-black dark:text-white" />
+      </ToolBtn>
+      <ToolBtn onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align Center (Ctrl+Shift+E)">
+        <TextAlignCenter className="w-5 h-5 text-black dark:text-white" />
+      </ToolBtn>
+      <ToolBtn onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align Right (Ctrl+Shift+R)">
+        <TextAlignRight className="w-5 h-5 text-black dark:text-white" />
+      </ToolBtn>
+      <ToolBtn onClick={() => editor.chain().focus().setTextAlign('justify').run()} active={editor.isActive({ textAlign: 'justify' })} title="Justify (Ctrl+Shift+J)">
+        <TextAlignJustify className="w-5 h-5 text-black dark:text-white" />
+      </ToolBtn>
+
+      <Divider />
+
       <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List">
         <List className="w-5 h-5 text-black dark:text-white" />
       </ToolBtn>
@@ -124,11 +158,11 @@ export default function EditorToolbar({ editor }) {
       <Divider />
 
       <label
-        title="Insert Image"
-        className="p-2 rounded-md text-sm transition-colors cursor-pointer text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+        title="Insert Image(s)"
+        className="p-2 rounded-md text-sm transition-colors cursor-pointer text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-300"
       >
         <Image className="w-5 h-5 text-black dark:text-white" />
-        <input type="file" accept="image/*" className="hidden" onChange={insertImage} />
+        <input type="file" accept="image/*" multiple className="hidden" onChange={insertImages} />
       </label>
 
     </div>

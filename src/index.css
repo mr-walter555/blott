@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+@import '@fontsource-variable/geist';
 @import 'highlight.js/styles/atom-one-light.css';
 
 @tailwind base;
@@ -17,7 +17,7 @@
 
   body {
     @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
-    font-family: "Google Sans Flex", sans-serif;
+    font-family: 'Geist Variable', sans-serif;
     font-optical-sizing: auto;
     overflow: hidden;
     user-select: none;
@@ -44,19 +44,19 @@
 
 @layer components {
   .sidebar-item {
-    @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer transition-all duration-150 select-none;
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer transition-all duration-150 select-none relative;
   }
 
   .sidebar-item.active {
-    @apply bg-brown-50 dark:bg-brown-950/60 text-brown-600 dark:text-brown-400;
+    @apply bg-brown-100/70 dark:bg-brown-950/60 text-brown-700 dark:text-brown-400 font-semibold;
   }
 
   .note-card {
-    @apply relative p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700 cursor-pointer transition-all duration-200 select-none;
+    @apply relative p-3.5 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all duration-150 select-none border border-transparent;
   }
 
   .note-card.selected {
-    @apply border-brown-300 dark:border-brown-700 bg-brown-50/50 dark:bg-brown-950/30;
+    @apply bg-brown-50 dark:bg-brown-950/30 border-brown-200/60 dark:border-brown-800/40;
   }
 
   .btn {
@@ -68,11 +68,11 @@
   }
 
   .btn-ghost {
-    @apply btn bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100;
+    @apply btn bg-transparent hover:bg-gray-100 dark:hover:bg-white/[0.06] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100;
   }
 
   .btn-icon {
-    @apply p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-150 cursor-pointer;
+    @apply p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-150 cursor-pointer;
   }
 
   .input {
@@ -192,9 +192,38 @@
   @apply rounded-xl my-3 max-w-full h-auto block shadow-sm border border-gray-200 dark:border-gray-700;
 }
 
-.tiptap-editor .ProseMirror .editor-image.ProseMirror-selectednode {
+.tiptap-editor .ProseMirror .resizable-image {
+  @apply relative inline-block leading-none;
+}
+
+.tiptap-editor .ProseMirror .resizable-image.is-selected .editor-image {
   @apply ring-2 ring-brown-500 ring-offset-2;
 }
+
+.tiptap-editor .ProseMirror .resize-handle {
+  @apply absolute w-2.5 h-2.5 bg-white dark:bg-gray-900 border-2 border-brown-500 rounded-sm shadow-sm;
+  z-index: 10;
+}
+.tiptap-editor .ProseMirror .resize-handle-top-left     { top: -5px; left: -5px; cursor: nwse-resize; }
+.tiptap-editor .ProseMirror .resize-handle-top-right    { top: -5px; right: -5px; cursor: nesw-resize; }
+.tiptap-editor .ProseMirror .resize-handle-bottom-left  { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.tiptap-editor .ProseMirror .resize-handle-bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
+.tiptap-editor .ProseMirror .resizable-image.is-resizing {
+  @apply select-none;
+}
+
+/* Hide native scrollbar on note editor */
+.tiptap-scroll::-webkit-scrollbar { display: none; }
+
+/* Focus mode editor */
+.focus-mode-editor .ProseMirror { color: #e5e7eb; font-size: 17px; line-height: 1.8; }
+.focus-mode-editor .ProseMirror p.is-editor-empty:first-child::before { color: #4b5563; }
+.focus-mode-editor .ProseMirror h1,
+.focus-mode-editor .ProseMirror h2,
+.focus-mode-editor .ProseMirror h3 { color: #f9fafb; }
+.focus-mode-editor .ProseMirror code { background: #1f2937; color: #a78bfa; }
+.focus-mode-editor .ProseMirror pre  { background: #111827; border-color: #374151; }
 
 /* Bubble menu */
 .tippy-box[data-theme~='ai-menu'] {

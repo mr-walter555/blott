@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { electronService } from '../services/electronService'
 import { v4 as uuidv4 } from 'uuid'
+import { GUIDE_NOTE_ID, makeGuideNote } from '../utils/guideNote'
 
 const FALLBACK_KEY = 'sn_notes'
 
@@ -34,7 +35,26 @@ export const useNotesStore = create((set, get) => ({
       }
       const notes = {}
       notesList.forEach(n => { notes[n.id] = n })
-      set({ notes, loading: false })
+
+      // Seed the guide note on first launch or if it was somehow removed
+      const isFirstLaunch = notesList.length === 0
+      if (!notes[GUIDE_NOTE_ID]) {
+        const guide = makeGuideNote()
+        notes[GUIDE_NOTE_ID] = guide
+        if (electronService.isElectron) {
+          await window.electronAPI.notes.create(guide)
+        } else {
+          const local = loadLocal()
+          local[GUIDE_NOTE_ID] = guide
+          saveLocal(local)
+        }
+      }
+
+      set({
+        notes,
+        loading: false,
+        selectedNoteId: isFirstLaunch ? GUIDE_NOTE_ID : null,
+      })
     } catch (err) {
       console.error('Failed to load notes:', err)
       set({ notes: loadLocal(), loading: false })
@@ -93,6 +113,7 @@ export const useNotesStore = create((set, get) => ({
   },
 
   deleteNote: async (id) => {
+    if (id === GUIDE_NOTE_ID) return
     set(s => {
       const notes = { ...s.notes }
       delete notes[id]
@@ -120,7 +141,10 @@ export const useNotesStore = create((set, get) => ({
   pinNote: (id, value) => get().updateNote(id, { pinned: value }),
   favoriteNote: (id, value) => get().updateNote(id, { favorite: value }),
   archiveNote: (id, value) => get().updateNote(id, { archived: value, trashed: false }),
-  trashNote: (id, value) => get().updateNote(id, { trashed: value, archived: false }),
+  trashNote: (id, value) => {
+    if (id === GUIDE_NOTE_ID) return
+    get().updateNote(id, { trashed: value, archived: false })
+  },
   restoreNote: (id) => get().updateNote(id, { trashed: false, archived: false }),
 
   openAsFloating: (id) => {

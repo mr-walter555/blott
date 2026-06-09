@@ -5,12 +5,18 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Google Sans', 'sans-serif'],
+        sans: ['Geist Variable', 'sans-serif'],
       },
       colors: {
+        // Neutral near-black scale for dark mode — replaces Tailwind's default
+        // blue-tinted 800/900 so surfaces read as true black with subtle
+        // elevation layers (body < sidebar < cards/modals < hover/inputs)
+        // rather than dark blue-gray.
         gray: {
-          925: '#0d0f14',
-          950: '#09090b',
+          800: '#1e1e1e',
+          900: '#121212',
+          925: '#0a0a0a',
+          950: '#000000',
         },
         brown: {
           50:  '#fdf7f0',

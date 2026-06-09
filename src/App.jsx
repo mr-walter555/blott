@@ -5,6 +5,7 @@ import StickyNote from './pages/StickyNote'
 import SharePage from './pages/SharePage'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import SettingsModal from './components/Settings/SettingsModal'
+import AskAIModal from './components/AskAI/AskAIModal'
 import { useNotesStore } from './store/notesStore'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { useUIStore } from './store/uiStore'
@@ -41,6 +42,8 @@ export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col">
       <MainLayout />
+      {/* AskAIModal is always mounted so conversation state survives open/close cycles */}
+      <AskAIModal />
       <AnimatePresence>
         {commandPaletteOpen && <CommandPalette key="cmd-palette" />}
         {settingsOpen && <SettingsModal key="settings" />}
