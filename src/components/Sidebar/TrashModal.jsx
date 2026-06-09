@@ -23,14 +23,14 @@ export default function TrashModal({ anchorY, onClose }) {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  const top = Math.min(anchorY, window.innerHeight - 420)
+  const top = Math.min(anchorY, window.innerHeight - 560)
 
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         className="fixed z-50 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden flex flex-col"
-        style={{ top, left: 268, width: 360, maxHeight: 420 }}
+        style={{ top, left: 268, width: 360, maxHeight: 560 }}
       >
         {/* Search */}
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
