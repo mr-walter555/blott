@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { MagnifyingGlass, ArrowCounterClockwise, Trash, FileText, Warning } from '@phosphor-icons/react'
+import { MagnifyingGlass, ArrowCounterClockwise, Trash, FileText, Warning, X } from '@phosphor-icons/react'
+import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useNotesStore } from '../../store/notesStore'
 
@@ -12,9 +13,69 @@ function timeAgo(dateStr) {
   return `${Math.floor(days / 30)}mo ago`
 }
 
+function DeleteConfirmModal({ note, onConfirm, onCancel }) {
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.12 }}
+        className="fixed inset-0 z-[60] bg-black/40"
+        onClick={onCancel}
+      />
+      <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 8 }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="pointer-events-auto w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between px-5 pt-5 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Warning className="w-5 h-5 text-red-500" weight="fill" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Delete permanently?</h3>
+                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
+                  "{note.title || 'Untitled'}" will be gone forever.
+                </p>
+              </div>
+            </div>
+            <button onClick={onCancel} className="btn-icon flex-shrink-0 ml-2">
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+
+          <p className="px-5 pb-4 text-xs text-gray-400 leading-relaxed">
+            This action cannot be undone. The note will be removed from all devices and cannot be recovered.
+          </p>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 px-5 py-4 border-t border-gray-100">
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 text-sm rounded-xl text-gray-600 hover:bg-gray-100 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2 text-sm rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+            >
+              Delete forever
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </>
+  )
+}
+
 export default function TrashModal({ anchorY, onClose }) {
-  const [search, setSearch]       = useState('')
-  const [confirmId, setConfirmId] = useState(null)
+  const [search, setSearch]         = useState('')
+  const [confirmNote, setConfirmNote] = useState(null)
   const inputRef = useRef(null)
 
   const allNotes    = useNotesStore(s => s.notes)
@@ -31,17 +92,17 @@ export default function TrashModal({ anchorY, onClose }) {
     inputRef.current?.focus()
     const handler = e => {
       if (e.key === 'Escape') {
-        if (confirmId) { setConfirmId(null); return }
+        if (confirmNote) { setConfirmNote(null); return }
         onClose()
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [confirmId])
+  }, [confirmNote])
 
-  const handleDelete = (id) => {
-    deleteNote(id)
-    setConfirmId(null)
+  const handleDelete = () => {
+    deleteNote(confirmNote.id)
+    setConfirmNote(null)
     toast.error('Note permanently deleted')
   }
 
@@ -77,50 +138,28 @@ export default function TrashModal({ anchorY, onClose }) {
             </div>
           ) : (
             trashed.map(note => (
-              <div key={note.id}>
-                {confirmId === note.id ? (
-                  /* Inline confirmation */
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 border-l-2 border-red-400">
-                    <Warning className="w-4 h-4 text-red-500 flex-shrink-0" weight="fill" />
-                    <span className="flex-1 text-xs text-red-700 leading-snug">Delete permanently?<br />This cannot be undone.</span>
-                    <button
-                      onClick={() => handleDelete(note.id)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => setConfirmId(null)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors group">
-                    <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 truncate">{note.title || 'Untitled'}</p>
-                      <p className="text-[11px] text-gray-400">{timeAgo(note.updatedAt)}</p>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => { restoreNote(note.id); toast.success('Note restored') }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Restore"
-                      >
-                        <ArrowCounterClockwise className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setConfirmId(note.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
-                        title="Delete permanently"
-                      >
-                        <Trash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <div key={note.id} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors group">
+                <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 truncate">{note.title || 'Untitled'}</p>
+                  <p className="text-[11px] text-gray-400">{timeAgo(note.updatedAt)}</p>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => { restoreNote(note.id); toast.success('Note restored') }}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                    title="Restore"
+                  >
+                    <ArrowCounterClockwise className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setConfirmNote(note)}
+                    className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete permanently"
+                  >
+                    <Trash className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -128,14 +167,24 @@ export default function TrashModal({ anchorY, onClose }) {
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
-          <p className="text-xs text-gray-400 leading-snug">
-            Notes auto-delete after 30 days.
-          </p>
+          <p className="text-xs text-gray-400 leading-snug">Notes auto-delete after 30 days.</p>
           {trashed.length > 0 && (
             <span className="text-xs text-gray-400 tabular-nums">{trashed.length} note{trashed.length !== 1 ? 's' : ''}</span>
           )}
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {confirmNote && (
+          <DeleteConfirmModal
+            key="delete-confirm"
+            note={confirmNote}
+            onConfirm={handleDelete}
+            onCancel={() => setConfirmNote(null)}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }
