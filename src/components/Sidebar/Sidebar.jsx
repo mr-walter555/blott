@@ -4,6 +4,7 @@ import {
   CaretDown, CaretRight, FileText, Star, PushPin as PushPinRaw, ListChecks,
   DotsThree, Trash, PencilSimple, BookOpen
 } from '@phosphor-icons/react'
+import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
@@ -305,7 +306,7 @@ export default function Sidebar() {
                 <>
                   <div className="mx-3 my-1 border-t border-gray-100 dark:border-gray-700" />
                   <button
-                    onClick={() => { trashNote(note.id, true); setMenu(null) }}
+                    onClick={() => { trashNote(note.id, true); setMenu(null); toast('Moved to trash', { icon: '🗑️' }) }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                   >
                     <Trash className="w-4 h-4" />

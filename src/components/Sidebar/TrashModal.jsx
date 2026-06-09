@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { MagnifyingGlass, ArrowCounterClockwise, Trash, FileText } from '@phosphor-icons/react'
+import toast from 'react-hot-toast'
 import { useNotesStore } from '../../store/notesStore'
 
 export default function TrashModal({ anchorY, onClose }) {
@@ -23,14 +24,14 @@ export default function TrashModal({ anchorY, onClose }) {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  const modalHeight = window.innerHeight - 160
+  const top = Math.min(anchorY, window.innerHeight - 560)
 
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         className="fixed z-50 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden flex flex-col"
-        style={{ top: 80, left: 268, width: 360, height: modalHeight }}
+        style={{ top, left: 268, width: 360, maxHeight: 560 }}
       >
         {/* Search */}
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
@@ -61,13 +62,13 @@ export default function TrashModal({ anchorY, onClose }) {
                 <span className="flex-1 text-sm text-gray-700 truncate">{note.title || 'Untitled'}</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={() => restoreNote(note.id)}
+                    onClick={() => { restoreNote(note.id); toast.success('Note restored') }}
                     className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
                     title="Restore">
                     <ArrowCounterClockwise className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => deleteNote(note.id)}
+                    onClick={() => { deleteNote(note.id); toast('Deleted permanently', { icon: '🗑️' }) }}
                     className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                     title="Delete permanently">
                     <Trash className="w-3.5 h-3.5" />

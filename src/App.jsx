@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
+import { Toaster } from 'react-hot-toast'
 import MainLayout from './pages/MainLayout'
 import StickyNote from './pages/StickyNote'
 import SharePage from './pages/SharePage'
@@ -48,6 +49,22 @@ export default function App() {
         {commandPaletteOpen && <CommandPalette key="cmd-palette" />}
         {settingsOpen && <SettingsModal key="settings" />}
       </AnimatePresence>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#1f2937',
+            color: '#f9fafb',
+            fontSize: '13px',
+            borderRadius: '10px',
+            padding: '10px 14px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+          },
+          success: { iconTheme: { primary: '#b45309', secondary: '#fff' } },
+          error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
     </div>
   )
 }

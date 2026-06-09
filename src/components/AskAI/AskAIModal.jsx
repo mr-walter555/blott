@@ -8,6 +8,7 @@ import {
   ClockCounterClockwise, Trash, ChatCircleText, PencilSimple,
   Rectangle, SidebarSimple, PictureInPicture, Check,
 } from '@phosphor-icons/react'
+import toast from 'react-hot-toast'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import { askNotes } from '../../services/aiService'
@@ -190,7 +191,7 @@ export default function AskAIModal() {
     if (!thread.length) return
     navigator.clipboard?.writeText(
       thread.map(t => `Q: ${t.question}\n${t.error ? `(error) ${t.error}` : `A: ${t.answer}`}`).join('\n\n')
-    )
+    ).then(() => toast.success('Conversation copied'))
   }
 
   const newConversation = () => {
@@ -433,7 +434,7 @@ export default function AskAIModal() {
                       <div className="space-y-2">
                         <AnswerText text={turn.answer} sources={turn.sources} onOpenNote={openNote} />
                         <div className="flex items-center gap-1 pt-0.5">
-                          <button onClick={() => navigator.clipboard?.writeText(turn.answer)} className="btn-icon !w-7 !h-7" title="Copy answer">
+                          <button onClick={() => navigator.clipboard?.writeText(turn.answer).then(() => toast.success('Copied'))} className="btn-icon !w-7 !h-7" title="Copy answer">
                             <Copy className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                           </button>
                           <button className="btn-icon !w-7 !h-7" title="Add to note">

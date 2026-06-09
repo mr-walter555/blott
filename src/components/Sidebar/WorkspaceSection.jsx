@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { Plus, DotsThree, Pencil, Trash, X } from '@phosphor-icons/react'
+import toast from 'react-hot-toast'
 import DropdownMenu from '../common/DropdownMenu'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWorkspaceStore } from '../../store/workspaceStore'
@@ -48,8 +49,10 @@ export default function WorkspaceSection() {
     if (modal.mode === 'create') {
       const ws = await createWorkspace({ name: name.trim(), color, description: description.trim() })
       setActiveWorkspace(ws.id)
+      toast.success(`Workspace "${name.trim()}" created`)
     } else {
       updateWorkspace(modal.ws.id, { name: name.trim(), color, description: description.trim() })
+      toast.success('Workspace updated')
     }
     closeModal()
   }
@@ -84,7 +87,7 @@ export default function WorkspaceSection() {
               <button onClick={() => openRename(ws)} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">
                 <Pencil className="w-4 h-4" weight="duotone" /> Rename
               </button>
-              <button onClick={() => { deleteWorkspace(ws.id); setMenuId(null) }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-red-50 text-red-500">
+              <button onClick={() => { deleteWorkspace(ws.id); setMenuId(null); toast('Workspace deleted', { icon: '🗑️' }) }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-red-50 text-red-500">
                 <Trash className="w-4 h-4" /> Delete
               </button>
             </div>

@@ -3,6 +3,7 @@ import {
   ArrowSquareOut, Trash,
   ArrowCounterClockwise, ArrowsOutSimple, FilePdf, FileText as FileMd, DotsThree, BookOpen
 } from '@phosphor-icons/react'
+import toast from 'react-hot-toast'
 import { useNotesStore } from '../../store/notesStore'
 import { useUIStore } from '../../store/uiStore'
 import { formatDate } from '../../utils/helpers'
@@ -34,7 +35,7 @@ export default function NoteHeader({ note, editor }) {
         {/* Right actions */}
         <div className="flex items-center gap-1">
           {note.trashed ? (
-            <button onClick={() => restoreNote(note.id)} className="btn-icon text-green-500" title="Restore note">
+            <button onClick={() => { restoreNote(note.id); toast.success('Note restored') }} className="btn-icon text-green-500" title="Restore note">
               <ArrowCounterClockwise className="w-5 h-5" />
             </button>
           ) : (
@@ -54,14 +55,14 @@ export default function NoteHeader({ note, editor }) {
                     </div>
                     <div className="py-1">
                       <button
-                        onClick={() => { exportAsPDF(note.title, note.content); setExportOpen(false) }}
+                        onClick={() => { exportAsPDF(note.title, note.content); setExportOpen(false); toast.success('Exported as PDF') }}
                         className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                       >
                         <FilePdf className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="whitespace-nowrap">Export as PDF</span>
                       </button>
                       <button
-                        onClick={() => { exportAsMarkdown(note.title, note.content); setExportOpen(false) }}
+                        onClick={() => { exportAsMarkdown(note.title, note.content); setExportOpen(false); toast.success('Exported as Markdown') }}
                         className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                       >
                         <FileMd className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -90,7 +91,7 @@ export default function NoteHeader({ note, editor }) {
                   Guide
                 </span>
               ) : (
-                <button onClick={() => trashNote(note.id, true)} className="btn-icon hover:text-red-500" title="Move to trash">
+                <button onClick={() => { trashNote(note.id, true); toast('Moved to trash', { icon: '🗑️' }) }} className="btn-icon hover:text-red-500" title="Move to trash">
                   <Trash className="w-5 h-5" />
                 </button>
               )}
