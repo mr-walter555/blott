@@ -26,37 +26,72 @@ const LAYOUTS = [
   { id: 'floating', label: 'Floating', icon: PictureInPicture },
 ]
 
+function InlineText({ text, sources, onOpenNote }) {
+  const parts = text.split(/(\[\d+\]|`[^`]+`|\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    const citation = part.match(/^\[(\d+)\]$/)
+    if (citation) {
+      const source = sources[Number(citation[1]) - 1]
+      if (!source) return <span key={i}>{part}</span>
+      return (
+        <button
+          key={i}
+          onClick={() => onOpenNote(source.id)}
+          className="inline-flex items-center justify-center mx-0.5 px-1.5 h-5 rounded-md text-[11px] font-medium bg-brown-100 dark:bg-brown-950/50 text-brown-700 dark:text-brown-400 hover:bg-brown-200 dark:hover:bg-brown-900/60 transition-colors align-middle"
+          title={source.title}
+        >
+          {citation[1]}
+        </button>
+      )
+    }
+    const code = part.match(/^`([^`]+)`$/)
+    if (code) return (
+      <code key={i} className="mx-0.5 px-1.5 py-0.5 rounded-md text-[12px] font-mono bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+        {code[1]}
+      </code>
+    )
+    const bold = part.match(/^\*\*([^*]+)\*\*$/)
+    if (bold) return <strong key={i} className="font-semibold">{bold[1]}</strong>
+    return <span key={i}>{part}</span>
+  })
+}
+
 function AnswerText({ text, sources, onOpenNote }) {
-  const parts = text.split(/(\[\d+\]|`[^`]+`)/g)
+  // Split into blocks separated by blank lines
+  const blocks = text.split(/\n{2,}/)
+  const baseText = 'text-sm text-gray-700 dark:text-gray-300 leading-relaxed'
+
   return (
-    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-      {parts.map((part, i) => {
-        const citation = part.match(/^\[(\d+)\]$/)
-        if (citation) {
-          const source = sources[Number(citation[1]) - 1]
-          if (!source) return <span key={i}>{part}</span>
+    <div className={`${baseText} space-y-2`}>
+      {blocks.map((block, bi) => {
+        const lines = block.split('\n').filter(l => l.trim())
+        const isBullet = lines.every(l => /^[\*\-]\s/.test(l.trim()))
+        const isNumbered = lines.every(l => /^\d+\.\s/.test(l.trim()))
+
+        if ((isBullet || isNumbered) && lines.length > 0) {
+          const Tag = isNumbered ? 'ol' : 'ul'
           return (
-            <button
-              key={i}
-              onClick={() => onOpenNote(source.id)}
-              className="inline-flex items-center justify-center mx-0.5 px-1.5 h-5 rounded-md text-[11px] font-medium bg-brown-100 dark:bg-brown-950/50 text-brown-700 dark:text-brown-400 hover:bg-brown-200 dark:hover:bg-brown-900/60 transition-colors align-middle"
-              title={source.title}
-            >
-              {citation[1]}
-            </button>
+            <Tag key={bi} className={isNumbered ? 'list-decimal pl-5 space-y-0.5' : 'list-disc pl-5 space-y-0.5'}>
+              {lines.map((line, li) => {
+                const content = line.trim().replace(/^[\*\-]\s+/, '').replace(/^\d+\.\s+/, '')
+                return (
+                  <li key={li}>
+                    <InlineText text={content} sources={sources} onOpenNote={onOpenNote} />
+                  </li>
+                )
+              })}
+            </Tag>
           )
         }
-        const code = part.match(/^`([^`]+)`$/)
-        if (code) {
-          return (
-            <code key={i} className="mx-0.5 px-1.5 py-0.5 rounded-md text-[12px] font-mono bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
-              {code[1]}
-            </code>
-          )
-        }
-        return <span key={i}>{part}</span>
+
+        // Mixed block — render line by line, wrapping bullet lines in <li> if needed
+        return (
+          <p key={bi} className="whitespace-pre-wrap">
+            <InlineText text={block} sources={sources} onOpenNote={onOpenNote} />
+          </p>
+        )
       })}
-    </p>
+    </div>
   )
 }
 
