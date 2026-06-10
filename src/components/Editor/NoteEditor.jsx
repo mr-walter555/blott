@@ -26,6 +26,7 @@ import { processText } from '../../services/aiService'
 import { AnimatePresence, motion } from 'framer-motion'
 import NoteHeader from './NoteHeader'
 import { getWordCount } from '../../utils/helpers'
+import { markdownToHtml } from '../../utils/markdownToHtml'
 
 const CODE_KEYWORDS = /\b(function|const|let|var|import|export|def|async|await|=>|interface|typeof|instanceof)\b/
 const CODE_SYMBOLS = /[{};]|=>|::|->|&&|\|\||\/\//
@@ -72,6 +73,8 @@ function AILoadingBar({ label, top, scrollRef, onStop }) {
 
 export default function NoteEditor({ noteId }) {
   const note            = useNotesStore(s => s.notes[noteId])
+  const pendingNoteAppend = useNotesStore(s => s.pendingNoteAppend)
+  const clearPendingNoteAppend = useNotesStore(s => s.clearPendingNoteAppend)
   const fontSize        = useUIStore(s => s.fontSize)
   const focusMode       = useUIStore(s => s.focusMode)
   const toggleFocusMode = useUIStore(s => s.toggleFocusMode)
@@ -200,6 +203,14 @@ export default function NoteEditor({ noteId }) {
     }
   }, [noteId])
 
+  // Live-insert content appended from elsewhere (e.g. "Add to note" in Ask AI)
+  // when this note's editor happens to be open.
+  useEffect(() => {
+    if (!editor || !pendingNoteAppend || pendingNoteAppend.noteId !== noteId) return
+    editor.chain().focus('end').insertContent(pendingNoteAppend.html).run()
+    clearPendingNoteAppend()
+  }, [pendingNoteAppend, editor, noteId, clearPendingNoteAppend])
+
   useEffect(() => {
     if (editor) {
       const size = fontSize === 'small' ? '14px' : fontSize === 'large' ? '18px' : '16px'
@@ -245,42 +256,10 @@ export default function NoteEditor({ noteId }) {
     }
   }
 
-  function textToHTML(text) {
-    // Use [^*]+ to match bold/italic — avoids failures on newlines or special chars
-    function inlineMarkdown(str) {
-      return str
-        .replace(/\*\*\*([^*]+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-        .replace(/\*\*([^*]+?)\*\*/g,     '<strong>$1</strong>')
-        .replace(/\*([^*]+?)\*/g,          '<em>$1</em>')
-        .replace(/`([^`]+?)`/g,            '<code>$1</code>')
-    }
-    return text
-      .split(/\n{2,}/)
-      .map(para => {
-        const line = para.trim()
-        if (!line) return ''
-        if (/^[-*•]\s/.test(line)) {
-          const items = line.split('\n').map(l =>
-            `<li>${inlineMarkdown(l.replace(/^[-*•]\s/, ''))}</li>`
-          ).join('')
-          return `<ul>${items}</ul>`
-        }
-        if (/^\d+\.\s/.test(line)) {
-          const items = line.split('\n').map(l =>
-            `<li>${inlineMarkdown(l.replace(/^\d+\.\s/, ''))}</li>`
-          ).join('')
-          return `<ol>${items}</ol>`
-        }
-        return `<p>${inlineMarkdown(line.replace(/\n/g, '<br/>'))}</p>`
-      })
-      .filter(Boolean)
-      .join('')
-  }
-
   function applyAIResult(mode) {
     if (!aiResult || !editor) return
     const { text, selFrom, selTo } = aiResult
-    const html = textToHTML(text)
+    const html = markdownToHtml(text)
     if (mode === 'replace') {
       editor.chain().focus().setTextSelection({ from: selFrom, to: selTo }).insertContent(html).run()
     } else {

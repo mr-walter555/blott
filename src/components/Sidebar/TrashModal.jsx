@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { MagnifyingGlass, ArrowCounterClockwise, Trash, FileText, Warning, X } from '@phosphor-icons/react'
+import { MagnifyingGlass, ArrowCounterClockwise, Trash, FileText } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useNotesStore } from '../../store/notesStore'
@@ -18,51 +18,40 @@ function DeleteConfirmModal({ note, onConfirm, onCancel }) {
     <>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        transition={{ duration: 0.12 }}
-        className="fixed inset-0 z-[60] bg-black/40"
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 z-[60] bg-black/50"
         onClick={onCancel}
       />
       <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 8 }}
+          initial={{ opacity: 0, scale: 0.96, y: 6 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 8 }}
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="pointer-events-auto w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden"
+          exit={{ opacity: 0, scale: 0.96, y: 6 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className="pointer-events-auto w-full max-w-sm mx-4 bg-white rounded-3xl shadow-2xl overflow-hidden"
         >
-          {/* Header */}
-          <div className="flex items-start justify-between px-5 pt-5 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <Warning className="w-5 h-5 text-red-500" weight="fill" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">Delete permanently?</h3>
-                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
-                  "{note.title || 'Untitled'}" will be gone forever.
-                </p>
-              </div>
+          {/* Icon + Copy */}
+          <div className="flex flex-col items-center px-7 pt-8 pb-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <Trash className="w-7 h-7 text-red-500" weight="fill" />
             </div>
-            <button onClick={onCancel} className="btn-icon flex-shrink-0 ml-2">
-              <X className="w-4 h-4 text-gray-400" />
-            </button>
+            <h3 className="text-[15px] font-semibold text-gray-900 mb-2">Delete permanently?</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              <span className="font-medium text-gray-700">"{note.title || 'Untitled'}"</span> will be gone forever and cannot be recovered.
+            </p>
           </div>
 
-          <p className="px-5 pb-4 text-xs text-gray-400 leading-relaxed">
-            This action cannot be undone. The note will be removed from all devices and cannot be recovered.
-          </p>
-
           {/* Actions */}
-          <div className="flex items-center gap-2 px-5 py-4 border-t border-gray-100">
+          <div className="flex items-center gap-2.5 px-5 pb-6">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2 text-sm rounded-xl text-gray-600 hover:bg-gray-100 transition-colors font-medium"
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2 text-sm rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors"
             >
               Delete forever
             </button>

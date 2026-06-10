@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Plus, DotsThree, Pencil, Trash, X, Warning } from '@phosphor-icons/react'
+import { Plus, DotsThree, Pencil, Trash, X } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import DropdownMenu from '../common/DropdownMenu'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -38,9 +38,9 @@ export default function WorkspaceSection() {
   const setActiveWorkspace = useUIStore(s => s.setActiveWorkspace)
   const notes = useNotesStore(s => s.notes)
 
-  const [menuId, setMenuId]               = useState(null)
-  const [wsModal, setWsModal]             = useState(null)
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [menuId, setMenuId]                   = useState(null)
+  const [wsModal, setWsModal]                 = useState(null)
+  const [confirmWorkspace, setConfirmWorkspace] = useState(null)
   const menuTriggerRef = useRef(null)
   const [modal, setModal] = useState(null)
 
@@ -66,7 +66,7 @@ export default function WorkspaceSection() {
 
   const handleDelete = (ws) => {
     deleteWorkspace(ws.id)
-    setConfirmDeleteId(null)
+    setConfirmWorkspace(null)
     setMenuId(null)
     toast.error(`"${ws.name}" deleted`)
   }
@@ -75,46 +75,26 @@ export default function WorkspaceSection() {
     <div className="space-y-0.5 px-0 py-1">
       {workspaces.map(ws => (
         <div key={ws.id} className="group relative">
-          {/* Delete confirmation inline */}
-          {confirmDeleteId === ws.id ? (
-            <div className="mx-1 my-0.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200">
-              <Warning className="w-3.5 h-3.5 text-red-500 flex-shrink-0" weight="fill" />
-              <span className="flex-1 text-xs text-red-700">Delete "{ws.name}"?</span>
-              <button
-                onClick={() => handleDelete(ws)}
-                className="px-2 py-0.5 rounded-md text-xs font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-2 py-0.5 rounded-md text-xs text-gray-500 hover:bg-gray-100 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
+          <button
+            onClick={e => setWsModal({ workspace: ws, anchorY: e.currentTarget.getBoundingClientRect().top })}
+            className="sidebar-item w-full"
+          >
+            <WorkspaceAvatar name={ws.name} color={ws.color} />
+            <span className="flex-1 text-left truncate">{ws.name}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-600">
+              {getNoteCount(ws.id) || ''}
+            </span>
             <button
-              onClick={e => setWsModal({ workspace: ws, anchorY: e.currentTarget.getBoundingClientRect().top })}
-              className="sidebar-item w-full"
+              onClick={(e) => {
+                e.stopPropagation()
+                menuTriggerRef.current = e.currentTarget
+                setMenuId(menuId === ws.id ? null : ws.id)
+              }}
+              className="opacity-20 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all"
             >
-              <WorkspaceAvatar name={ws.name} color={ws.color} />
-              <span className="flex-1 text-left truncate">{ws.name}</span>
-              <span className="text-xs text-gray-400 dark:text-gray-600">
-                {getNoteCount(ws.id) || ''}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  menuTriggerRef.current = e.currentTarget
-                  setMenuId(menuId === ws.id ? null : ws.id)
-                }}
-                className="opacity-20 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all"
-              >
-                <DotsThree className="w-4 h-4 text-black" weight="bold" />
-              </button>
+              <DotsThree className="w-4 h-4 text-black" weight="bold" />
             </button>
-          )}
+          </button>
 
           <DropdownMenu anchor={menuTriggerRef} open={menuId === ws.id} onClose={() => setMenuId(null)} align="right">
             <div className="bg-white border border-gray-200 rounded-lg shadow-xl py-1 w-36">
@@ -122,7 +102,7 @@ export default function WorkspaceSection() {
                 <Pencil className="w-4 h-4" weight="duotone" /> Rename
               </button>
               <button
-                onClick={() => { setConfirmDeleteId(ws.id); setMenuId(null) }}
+                onClick={() => { setConfirmWorkspace(ws); setMenuId(null) }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-red-50 text-red-500"
               >
                 <Trash className="w-4 h-4" /> Delete
@@ -151,6 +131,17 @@ export default function WorkspaceSection() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {confirmWorkspace && (
+          <WorkspaceDeleteModal
+            key="ws-delete-confirm"
+            workspace={confirmWorkspace}
+            onConfirm={() => handleDelete(confirmWorkspace)}
+            onCancel={() => setConfirmWorkspace(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {wsModal && (
         <WorkspaceNotesModal
           workspace={wsModal.workspace}
@@ -159,6 +150,53 @@ export default function WorkspaceSection() {
         />
       )}
     </div>
+  )
+}
+
+function WorkspaceDeleteModal({ workspace, onConfirm, onCancel }) {
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 z-[60] bg-black/50"
+        onClick={onCancel}
+      />
+      <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 6 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className="pointer-events-auto w-full max-w-sm mx-4 bg-white rounded-3xl shadow-2xl overflow-hidden"
+        >
+          <div className="flex flex-col items-center px-7 pt-8 pb-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <Trash className="w-7 h-7 text-red-500" weight="fill" />
+            </div>
+            <h3 className="text-[15px] font-semibold text-gray-900 mb-2">Delete workspace?</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              <span className="font-medium text-gray-700">"{workspace.name}"</span> will be deleted. Notes inside will not be removed.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 px-5 pb-6">
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </>
   )
 }
 

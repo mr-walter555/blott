@@ -28,6 +28,8 @@ export default function App() {
   const initWorkspaces = useWorkspaceStore(s => s.init)
   const commandPaletteOpen = useUIStore(s => s.commandPaletteOpen)
   const settingsOpen = useUIStore(s => s.settingsOpen)
+  const askAIOpen = useUIStore(s => s.askAIOpen)
+  const askAILayout = useUIStore(s => s.askAILayout)
 
   useEffect(() => {
     initNotes()
@@ -50,7 +52,7 @@ export default function App() {
         {settingsOpen && <SettingsModal key="settings" />}
       </AnimatePresence>
       <Toaster
-        position="bottom-right"
+        position={askAIOpen && askAILayout === 'floating' ? 'top-right' : 'bottom-right'}
         toastOptions={{
           duration: 3000,
           style: {

@@ -5,7 +5,7 @@ import Sidebar from '../components/Sidebar/Sidebar'
 import NoteEditor from '../components/Editor/NoteEditor'
 import { useUIStore } from '../store/uiStore'
 import { useNotesStore } from '../store/notesStore'
-import { Plus } from '@phosphor-icons/react'
+import { Sparkle } from '@phosphor-icons/react'
 
 const AI_SIDEBAR_WIDTH = 384 // px — matches w-96 / matches panel content width
 
@@ -19,6 +19,7 @@ export default function MainLayout() {
 
   const sidebarRef  = useRef(null)
   const aiSlotRef   = useRef(null)
+  const sparkleRef  = useRef(null)
 
   // ── Left sidebar ──────────────────────────────────────────────────────
   useLayoutEffect(() => {
@@ -58,6 +59,20 @@ export default function MainLayout() {
       overwrite: 'auto',
     })
   }, [aiSidebarActive])
+
+  // ── FAB sparkle twinkle ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!sparkleRef.current) return
+    const tween = gsap.to(sparkleRef.current, {
+      scale:    1.18,
+      rotate:   15,
+      duration: 1.1,
+      ease:     'sine.inOut',
+      yoyo:     true,
+      repeat:   -1,
+    })
+    return () => tween.kill()
+  }, [])
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -119,11 +134,13 @@ export default function MainLayout() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          className="fixed bottom-6 right-6 z-40 bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 flex items-center justify-center hover:shadow-xl transition-shadow"
+          className="fixed bottom-6 right-6 z-40 bg-brown-50 dark:bg-brown-950 rounded-full shadow-lg border border-brown-100 dark:border-brown-800 flex items-center justify-center hover:shadow-xl transition-shadow"
           style={{ width: 52, height: 52 }}
           title="Ask your notes (Ctrl+Shift+A)"
         >
-          <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" weight="bold" />
+          <span ref={sparkleRef} className="flex items-center justify-center">
+            <Sparkle className="w-6 h-6 text-brown-500" weight="fill" />
+          </span>
         </motion.button>
       )}
     </div>

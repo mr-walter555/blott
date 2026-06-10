@@ -12,7 +12,9 @@ export async function processText(action, text) {
 
 // `notes` is the small, pre-ranked list of { id, title, excerpt } the caller
 // judged relevant — the backend never sees the user's full note collection.
-export async function askNotes(question, notes) {
-  const { data } = await api.post('/ask', { question, notes })
+// `history` is prior { question, answer } turns from this conversation, used
+// so follow-up questions are understood in context.
+export async function askNotes(question, notes, history) {
+  const { data } = await api.post('/ask', { question, notes, history })
   return data
 }

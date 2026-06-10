@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
 import {
-  Sparkle, X, ArrowUp, FileText, CaretDown, CaretLeft, PlusCircle,
+  Sparkle, X, ArrowUp, FileText, CaretDown, CaretLeft, CaretRight, PlusCircle,
   Copy, Plus, ThumbsUp, ThumbsDown, Microphone, SlidersHorizontal,
   ClockCounterClockwise, Trash, ChatCircleText, PencilSimple,
-  Rectangle, SidebarSimple, PictureInPicture, Check,
+  SidebarSimple, PictureInPicture, Check, ArrowClockwise,
 } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { useUIStore } from '../../store/uiStore'
@@ -15,6 +15,7 @@ import { askNotes } from '../../services/aiService'
 import { rankNotesByRelevance } from '../../utils/noteSearch'
 import { loadConversations, saveConversation, deleteConversation } from '../../utils/askAIHistory'
 import { formatDate, truncate } from '../../utils/helpers'
+import { markdownToHtml } from '../../utils/markdownToHtml'
 
 const SUGGESTIONS = [
   'What have I written about lately?',
@@ -26,6 +27,83 @@ const LAYOUTS = [
   { id: 'sidebar',  label: 'Sidebar',  icon: SidebarSimple },
   { id: 'floating', label: 'Floating', icon: PictureInPicture },
 ]
+
+// Each turn can hold multiple regenerated answers ("versions"). Older saved
+// conversations only have a single flat { answer, sources, cited, feedback }
+// shape — normalize those into a one-item versions array on read.
+function getVersions(turn) {
+  return turn.versions || [{ answer: turn.answer, sources: turn.sources, cited: turn.cited, feedback: turn.feedback ?? null }]
+}
+
+function getCurrentVersion(turn) {
+  const versions = getVersions(turn)
+  return versions[Math.min(turn.versionIndex ?? 0, versions.length - 1)]
+}
+
+// Builds the { question, answer } pairs sent as conversation context for
+// follow-up questions, using each turn's currently displayed version.
+function toHistoryPayload(thread) {
+  return thread
+    .filter(t => !t.error)
+    .map(t => ({ question: t.question, answer: getCurrentVersion(t).answer }))
+}
+
+// Strips citation markers and markdown emphasis so copied text reads as
+// clean prose when pasted into a note or elsewhere.
+function toPlainText(text) {
+  return text
+    .replace(/```\w*\n?([\s\S]*?)```/g, '$1')
+    .replace(/\s*\[\d+\]/g, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim()
+}
+
+// Splits answer text into alternating prose/code segments on fenced code blocks.
+function splitCodeBlocks(text) {
+  const regex = /```(\w*)\n?([\s\S]*?)```/g
+  const parts = []
+  let lastIndex = 0
+  let match
+  while ((match = regex.exec(text))) {
+    if (match.index > lastIndex) parts.push({ type: 'text', text: text.slice(lastIndex, match.index) })
+    parts.push({ type: 'code', language: match[1], code: match[2].replace(/\n$/, '') })
+    lastIndex = regex.lastIndex
+  }
+  if (lastIndex < text.length) parts.push({ type: 'text', text: text.slice(lastIndex) })
+  return parts
+}
+
+function CodeBlock({ language, code }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(code).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500">{language || 'text'}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          {copied
+            ? <Check className="w-3 h-3 text-green-500" weight="bold" />
+            : <Copy className="w-3 h-3" />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <pre className="overflow-x-auto px-3 py-2.5 bg-gray-900 dark:bg-black/30">
+        <code className="font-mono text-[12px] text-gray-100 leading-relaxed whitespace-pre">{code}</code>
+      </pre>
+    </div>
+  )
+}
 
 function InlineText({ text, sources, onOpenNote }) {
   const parts = text.split(/(\[\d+\]|`[^`]+`|\*\*[^*]+\*\*)/g)
@@ -58,13 +136,20 @@ function InlineText({ text, sources, onOpenNote }) {
 }
 
 function AnswerText({ text, sources, onOpenNote }) {
-  // Split into blocks separated by blank lines
-  const blocks = text.split(/\n{2,}/)
   const baseText = 'text-sm text-gray-700 dark:text-gray-300 leading-relaxed'
+  const segments = splitCodeBlocks(text)
 
   return (
-    <div className={`${baseText} space-y-2`}>
-      {blocks.map((block, bi) => {
+    <div className="space-y-2">
+      {segments.map((seg, si) => {
+        if (seg.type === 'code') {
+          return <CodeBlock key={si} language={seg.language} code={seg.code} />
+        }
+
+        // Split into blocks separated by blank lines
+        const blocks = seg.text.split(/\n{2,}/).filter(b => b.trim())
+
+        return blocks.map((block, bi) => {
         const lines = block.split('\n').filter(l => l.trim())
         const isBullet = lines.every(l => /^[\*\-]\s/.test(l.trim()))
         const isNumbered = lines.every(l => /^\d+\.\s/.test(l.trim()))
@@ -72,7 +157,7 @@ function AnswerText({ text, sources, onOpenNote }) {
         if ((isBullet || isNumbered) && lines.length > 0) {
           const Tag = isNumbered ? 'ol' : 'ul'
           return (
-            <Tag key={bi} className={isNumbered ? 'list-decimal pl-5 space-y-0.5' : 'list-disc pl-5 space-y-0.5'}>
+            <Tag key={`${si}-${bi}`} className={`${baseText} ${isNumbered ? 'list-decimal pl-5 space-y-0.5' : 'list-disc pl-5 space-y-0.5'}`}>
               {lines.map((line, li) => {
                 const content = line.trim().replace(/^[\*\-]\s+/, '').replace(/^\d+\.\s+/, '')
                 return (
@@ -87,10 +172,11 @@ function AnswerText({ text, sources, onOpenNote }) {
 
         // Mixed block — render line by line, wrapping bullet lines in <li> if needed
         return (
-          <p key={bi} className="whitespace-pre-wrap">
+          <p key={`${si}-${bi}`} className={`${baseText} whitespace-pre-wrap`}>
             <InlineText text={block} sources={sources} onOpenNote={onOpenNote} />
           </p>
         )
+        })
       })}
     </div>
   )
@@ -103,6 +189,9 @@ export default function AskAIModal() {
   const setAskAILayout = useUIStore(s => s.setAskAILayout)
   const setSelectedNote = useNotesStore(s => s.setSelectedNote)
   const notes          = useNotesStore(s => s.notes)
+  const selectedNoteId = useNotesStore(s => s.selectedNoteId)
+  const appendToNote   = useNotesStore(s => s.appendToNote)
+  const createNote     = useNotesStore(s => s.createNote)
 
   const [conversationId, setConversationId] = useState(() => uuidv4())
   const [question, setQuestion]   = useState('')
@@ -114,6 +203,8 @@ export default function AskAIModal() {
   const [layoutMenuOpen, setLayoutMenuOpen] = useState(false)
   const [editingIndex, setEditingIndex]     = useState(null)
   const [editingText, setEditingText]       = useState('')
+  const [copiedIndex, setCopiedIndex]       = useState(null)
+  const [transcriptCopied, setTranscriptCopied] = useState(false)
   const inputRef     = useRef(null)
   const scrollRef    = useRef(null)
   const layoutMenuRef = useRef(null)
@@ -160,9 +251,32 @@ export default function AskAIModal() {
     const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
     let nextThread
     try {
-      const { answer, citedIds } = await askNotes(trimmed, candidates)
+      const { answer, citedIds } = await askNotes(trimmed, candidates, toHistoryPayload(baseThread))
       const cited = candidates.filter(s => citedIds?.includes(s.id))
-      nextThread = [...baseThread, { question: trimmed, answer, sources: candidates, cited }]
+      nextThread = [...baseThread, { question: trimmed, versions: [{ answer, sources: candidates, cited, feedback: null }], versionIndex: 0 }]
+    } catch (err) {
+      nextThread = [...baseThread, { question: trimmed, error: err?.response?.data?.error || err.message || 'Something went wrong.' }]
+    } finally {
+      setLoading(false)
+    }
+    setThread(nextThread)
+    setHistory(saveConversation({ id: conversationId, thread: nextThread }))
+  }
+
+  const regenerate = async (index) => {
+    if (loading) return
+    const turn = thread[index]
+    if (!turn) return
+    const trimmed = turn.question
+    const baseThread = thread.slice(0, index)
+    setLoading(true)
+    const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
+    let nextThread
+    try {
+      const { answer, citedIds } = await askNotes(trimmed, candidates, toHistoryPayload(baseThread))
+      const cited = candidates.filter(s => citedIds?.includes(s.id))
+      const versions = [...(turn.error ? [] : getVersions(turn)), { answer, sources: candidates, cited, feedback: null }]
+      nextThread = [...baseThread, { question: trimmed, versions, versionIndex: versions.length - 1 }]
     } catch (err) {
       nextThread = [...baseThread, { question: trimmed, error: err?.response?.data?.error || err.message || 'Something went wrong.' }]
     } finally {
@@ -190,8 +304,66 @@ export default function AskAIModal() {
   const copyTranscript = () => {
     if (!thread.length) return
     navigator.clipboard?.writeText(
-      thread.map(t => `Q: ${t.question}\n${t.error ? `(error) ${t.error}` : `A: ${t.answer}`}`).join('\n\n')
-    ).then(() => toast.success('Conversation copied'))
+      thread.map(t => `Q: ${t.question}\n${t.error ? `(error) ${t.error}` : `A: ${toPlainText(getCurrentVersion(t).answer)}`}`).join('\n\n')
+    ).then(() => {
+      setTranscriptCopied(true)
+      toast.success('Conversation copied')
+      setTimeout(() => setTranscriptCopied(false), 1500)
+    })
+  }
+
+  const copyAnswer = (index, text) => {
+    navigator.clipboard?.writeText(toPlainText(text)).then(() => {
+      setCopiedIndex(index)
+      toast.success('Copied')
+      setTimeout(() => setCopiedIndex(c => (c === index ? null : c)), 1500)
+    })
+  }
+
+  const addToNote = (text) => {
+    const html = markdownToHtml(text)
+    if (selectedNoteId && notes[selectedNoteId]) {
+      appendToNote(selectedNoteId, html)
+      toast.success(`Added to "${notes[selectedNoteId].title || 'Untitled'}"`)
+    } else {
+      createNote({ title: 'From Ask your notes', content: html })
+      toast.success('Added to a new note')
+    }
+  }
+
+  const setFeedback = (index, value) => {
+    let cleared = false
+    setThread(prev => {
+      const next = prev.map((t, i) => {
+        if (i !== index || t.error) return t
+        const versions = getVersions(t)
+        const vi = Math.min(t.versionIndex ?? 0, versions.length - 1)
+        const updatedVersions = versions.map((v, j) => {
+          if (j !== vi) return v
+          cleared = v.feedback === value
+          return { ...v, feedback: cleared ? null : value }
+        })
+        return { question: t.question, versions: updatedVersions, versionIndex: vi }
+      })
+      setHistory(saveConversation({ id: conversationId, thread: next }))
+      return next
+    })
+    if (!cleared) {
+      if (value === 'up') toast.success('Thanks for the feedback!')
+      else toast('Thanks — noted for improvement')
+    }
+  }
+
+  const setVersionIndex = (index, vi) => {
+    setThread(prev => {
+      const next = prev.map((t, i) => {
+        if (i !== index) return t
+        const versions = getVersions(t)
+        return { question: t.question, versions, versionIndex: Math.max(0, Math.min(vi, versions.length - 1)) }
+      })
+      setHistory(saveConversation({ id: conversationId, thread: next }))
+      return next
+    })
   }
 
   const newConversation = () => {
@@ -242,7 +414,9 @@ export default function AskAIModal() {
             <ClockCounterClockwise className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
           <button onClick={copyTranscript} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="Copy conversation">
-            <Copy className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            {transcriptCopied
+              ? <Check className="w-4 h-4 text-green-500" weight="bold" />
+              : <Copy className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
           </button>
           <button onClick={newConversation} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="New conversation">
             <PlusCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -255,7 +429,7 @@ export default function AskAIModal() {
               className={`btn-icon ${layoutMenuOpen ? 'bg-gray-100 dark:bg-white/[0.08]' : ''}`}
               title="Chat layout"
             >
-              <Rectangle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              {(() => { const L = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0]; return <L.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" /> })()}
             </button>
             <AnimatePresence>
               {layoutMenuOpen && (
@@ -430,40 +604,84 @@ export default function AskAIModal() {
                     )}
                     {turn.error ? (
                       <p className="text-sm text-red-500">⚠️ {turn.error}</p>
-                    ) : (
-                      <div className="space-y-2">
-                        <AnswerText text={turn.answer} sources={turn.sources} onOpenNote={openNote} />
-                        <div className="flex items-center gap-1 pt-0.5">
-                          <button onClick={() => navigator.clipboard?.writeText(turn.answer).then(() => toast.success('Copied'))} className="btn-icon !w-7 !h-7" title="Copy answer">
-                            <Copy className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                          </button>
-                          <button className="btn-icon !w-7 !h-7" title="Add to note">
-                            <Plus className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                          </button>
-                          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
-                          <button className="btn-icon !w-7 !h-7" title="Good response">
-                            <ThumbsUp className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                          </button>
-                          <button className="btn-icon !w-7 !h-7" title="Bad response">
-                            <ThumbsDown className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                          </button>
-                        </div>
-                        {turn.cited?.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-0.5">
-                            {turn.cited.map(s => (
-                              <button
-                                key={s.id}
-                                onClick={() => openNote(s.id)}
-                                className="flex items-center gap-1.5 text-xs pl-2 pr-3 py-1 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
-                              >
-                                <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                                <span className="truncate max-w-[9rem]">{s.title}</span>
-                              </button>
-                            ))}
+                    ) : (() => {
+                      const versions = getVersions(turn)
+                      const vi = Math.min(turn.versionIndex ?? 0, versions.length - 1)
+                      const current = versions[vi]
+                      return (
+                        <div className="space-y-2">
+                          <AnswerText text={current.answer} sources={current.sources} onOpenNote={openNote} />
+                          <div className="flex items-center gap-1 pt-0.5">
+                            {versions.length > 1 && (
+                              <div className="flex items-center gap-0.5 mr-1 px-1 h-7 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <button
+                                  onClick={() => setVersionIndex(i, vi - 1)}
+                                  disabled={vi === 0}
+                                  className="flex items-center justify-center w-5 h-5 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
+                                  title="Previous response"
+                                >
+                                  <CaretLeft className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                                </button>
+                                <span className="text-[11px] text-gray-400 dark:text-gray-500 select-none tabular-nums px-0.5">
+                                  {vi + 1}/{versions.length}
+                                </span>
+                                <button
+                                  onClick={() => setVersionIndex(i, vi + 1)}
+                                  disabled={vi === versions.length - 1}
+                                  className="flex items-center justify-center w-5 h-5 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
+                                  title="Next response"
+                                >
+                                  <CaretRight className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                                </button>
+                              </div>
+                            )}
+                            <button onClick={() => copyAnswer(i, current.answer)} className="btn-icon !w-7 !h-7" title="Copy answer">
+                              {copiedIndex === i
+                                ? <Check className="w-3.5 h-3.5 text-green-500" weight="bold" />
+                                : <Copy className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
+                            </button>
+                            <button onClick={() => addToNote(current.answer)} className="btn-icon !w-7 !h-7" title="Add to note">
+                              <Plus className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                            </button>
+                            <button
+                              onClick={() => regenerate(i)}
+                              disabled={loading}
+                              className="btn-icon !w-7 !h-7 disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Regenerate response"
+                            >
+                              <ArrowClockwise className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                            </button>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
+                            <button onClick={() => setFeedback(i, 'up')} className="btn-icon !w-7 !h-7" title="Good response">
+                              <ThumbsUp
+                                className={`w-3.5 h-3.5 ${current.feedback === 'up' ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`}
+                                weight={current.feedback === 'up' ? 'fill' : 'regular'}
+                              />
+                            </button>
+                            <button onClick={() => setFeedback(i, 'down')} className="btn-icon !w-7 !h-7" title="Bad response">
+                              <ThumbsDown
+                                className={`w-3.5 h-3.5 ${current.feedback === 'down' ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`}
+                                weight={current.feedback === 'down' ? 'fill' : 'regular'}
+                              />
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          {current.cited?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {current.cited.map(s => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => openNote(s.id)}
+                                  className="flex items-center gap-1.5 text-xs pl-2 pr-3 py-1 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                                >
+                                  <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                                  <span className="truncate max-w-[9rem]">{s.title}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 ))}
 
@@ -556,23 +774,30 @@ export default function AskAIModal() {
 
   // ── Rendering ──────────────────────────────────────────────────────────────
 
-  // Sidebar mode: portal panel into the GSAP-animated slot inside MainLayout
-  // The slot's width animation (0 ↔ 384px) creates the "push content" effect
-  if (layoutId === 'sidebar') {
-    const slot = document.getElementById('ai-sidebar-slot')
-    if (!askAIOpen || !slot) return null
-    return createPortal(
-      <div className="bg-white dark:bg-gray-900 h-full flex flex-col overflow-hidden">
-        {panel}
-      </div>,
-      slot
-    )
-  }
+  // Both modes live under one AnimatePresence so switching layouts crossfades
+  // the old panel out while the new one fades/pops in, instead of one
+  // disappearing instantly while the other animates.
+  const slot = document.getElementById('ai-sidebar-slot')
 
-  // Floating mode: animated overlay that expands from the FAB (bottom-right origin)
   return (
     <AnimatePresence>
-      {askAIOpen && (
+      {/* Sidebar mode: portal panel into the GSAP-animated slot inside MainLayout.
+          The slot's width animation (0 ↔ 384px) creates the "push content" effect */}
+      {askAIOpen && layoutId === 'sidebar' && slot && createPortal(
+        <motion.div
+          key="sidebar-panel"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.25, delay: 0.15 } }}
+          exit={{ opacity: 0, transition: { duration: 0.15 } }}
+          className="bg-white dark:bg-gray-900 h-full flex flex-col overflow-hidden"
+        >
+          {panel}
+        </motion.div>,
+        slot
+      )}
+
+      {/* Floating mode: animated overlay that expands from the FAB (bottom-right origin) */}
+      {askAIOpen && layoutId === 'floating' && (
         <div key="floating-overlay" className="fixed inset-0 z-50 pointer-events-none">
           <motion.div
             initial={{ scale: 0.05, opacity: 0 }}

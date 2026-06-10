@@ -84,6 +84,10 @@ export default function Sidebar() {
       .slice(0, 30)
   }, [allNotes])
 
+  const trashedCount = useMemo(() => {
+    return Object.values(allNotes).filter(n => n.trashed).length
+  }, [allNotes])
+
   const handleNewNote = async () => {
     const note = await createNote({ workspaceId: activeWorkspaceId || null })
     setSelectedNote(note.id)
@@ -238,7 +242,10 @@ export default function Sidebar() {
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                 >
                   <Trash className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-500">Trash</span>
+                  <span className="text-sm text-gray-500 flex-1 text-left">Trash</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-600">
+                    {trashedCount || ''}
+                  </span>
                 </button>
               </div>
             </motion.div>

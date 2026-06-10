@@ -23,6 +23,7 @@ export const useNotesStore = create((set, get) => ({
   notes: {},
   selectedNoteId: null,
   loading: false,
+  pendingNoteAppend: null,
 
   init: async () => {
     set({ loading: true })
@@ -137,6 +138,20 @@ export const useNotesStore = create((set, get) => ({
   },
 
   setSelectedNote: (id) => set({ selectedNoteId: id }),
+
+  // Appends HTML to a note's content and persists it. If that note's editor
+  // is currently mounted, it also picks up `pendingNoteAppend` to insert the
+  // content live (see NoteEditor) — both paths converge on the same final
+  // content, so this stays correct whether or not the note is open.
+  appendToNote: (id, html) => {
+    const existing = get().notes[id]
+    if (!existing) return
+    const separator = existing.content?.trim() ? '<hr>' : ''
+    get().updateNote(id, { content: (existing.content || '') + separator + html })
+    set({ pendingNoteAppend: { noteId: id, html: separator + html, requestId: uuidv4() } })
+  },
+
+  clearPendingNoteAppend: () => set({ pendingNoteAppend: null }),
 
   pinNote: (id, value) => get().updateNote(id, { pinned: value }),
   favoriteNote: (id, value) => get().updateNote(id, { favorite: value }),
