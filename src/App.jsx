@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { Toaster } from 'react-hot-toast'
+import { Toaster, toast } from 'react-hot-toast'
+import { X } from '@phosphor-icons/react'
 import MainLayout from './pages/MainLayout'
 import StickyNote from './pages/StickyNote'
 import CommandPalette from './components/CommandPalette/CommandPalette'
@@ -11,10 +12,43 @@ import { useWorkspaceStore } from './store/workspaceStore'
 import { useUIStore } from './store/uiStore'
 import { useTheme } from './hooks/useTheme'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { electronService } from './services/electronService'
 
 const params = new URLSearchParams(window.location.search)
 const isStickyMode = params.get('mode') === 'sticky'
 const stickyNoteId = params.get('noteId')
+
+function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondaryLabel = 'Dismiss' }) {
+  return (
+    <div className="w-80 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg p-4">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</p>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 -m-1 p-1 rounded-md transition-colors"
+          aria-label="Dismiss"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={() => { onPrimary(); toast.dismiss(t.id) }}
+          className="px-3 py-1.5 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-medium hover:opacity-90 transition-opacity"
+        >
+          {primaryLabel}
+        </button>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+        >
+          {secondaryLabel}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   useTheme()
@@ -26,11 +60,46 @@ export default function App() {
   const settingsOpen = useUIStore(s => s.settingsOpen)
   const askAIOpen = useUIStore(s => s.askAIOpen)
   const askAILayout = useUIStore(s => s.askAILayout)
+  const setUpdateStatus = useUIStore(s => s.setUpdateStatus)
+  const openSettings = useUIStore(s => s.openSettings)
 
   useEffect(() => {
     initNotes()
     initWorkspaces()
   }, [initNotes, initWorkspaces])
+
+  // Registered once for the app's lifetime so a silent update check on launch
+  // (before any UI is listening) still reaches the user — Settings only shows
+  // this status while it's open.
+  useEffect(() => {
+    if (!electronService.isElectron) return
+    return window.electronAPI.updater.onStatus(status => {
+      setUpdateStatus(status)
+      if (status.status === 'available') {
+        toast.custom(t => (
+          <UpdateToast
+            t={t}
+            title={`Update available – v${status.version}`}
+            description="A new version of Smart Notepad is ready to download."
+            primaryLabel="Download"
+            onPrimary={() => window.electronAPI.updater.download()}
+            secondaryLabel="Dismiss"
+          />
+        ), { id: 'update-status', duration: Infinity })
+      } else if (status.status === 'downloaded') {
+        toast.custom(t => (
+          <UpdateToast
+            t={t}
+            title={`Update ready – v${status.version}`}
+            description="Restart now to install the latest version."
+            primaryLabel="Restart & Install"
+            onPrimary={() => window.electronAPI.updater.install()}
+            secondaryLabel="Later"
+          />
+        ), { id: 'update-status', duration: Infinity })
+      }
+    })
+  }, [setUpdateStatus])
 
   if (isStickyMode && stickyNoteId) {
     return <StickyNote noteId={stickyNoteId} />

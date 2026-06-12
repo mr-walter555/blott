@@ -30,6 +30,7 @@ export const useUIStore = create((set, get) => ({
   autoSaveInterval: 2000,
   fontFamily: 'sora',
   focusMode: false,
+  updateStatus: null,
 
   setTheme: (theme) => set({ theme }),
   setResolvedTheme: (resolvedTheme) => set({ resolvedTheme }),
@@ -52,6 +53,11 @@ export const useUIStore = create((set, get) => ({
   setFontFamily: (fontFamily) => set({ fontFamily }),
   setAutoSaveInterval: (ms) => set({ autoSaveInterval: ms }),
   toggleFocusMode: () => set(s => ({ focusMode: !s.focusMode })),
+  // Accepts either a status object or a React-style updater (prev => next),
+  // since update progress is applied as `s => ({ ...s, percent })`.
+  setUpdateStatus: (update) => set(s => ({
+    updateStatus: typeof update === 'function' ? update(s.updateStatus) : update,
+  })),
 
   applySettings: (settings) => set({
     theme: settings.theme ?? 'system',

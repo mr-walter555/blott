@@ -71,7 +71,8 @@ export default function SettingsModal() {
   const [appInfo, setAppInfo] = useState(null)
   const [openAtLogin, setOpenAtLoginState] = useState(false)
   const [openAtLoginSaving, setOpenAtLoginSaving] = useState(false)
-  const [updateStatus, setUpdateStatus] = useState(null)
+  const updateStatus = useUIStore(s => s.updateStatus)
+  const setUpdateStatus = useUIStore(s => s.setUpdateStatus)
   const [apiKey, setApiKey] = useState('')
   const [apiKeyVisible, setApiKeyVisible] = useState(false)
   const [apiKeySaved, setApiKeySaved] = useState(false)
@@ -130,11 +131,6 @@ export default function SettingsModal() {
   }
 
   const openDataFolder = () => window.electronAPI.app.openDataFolder()
-
-  useEffect(() => {
-    if (!electronService.isElectron) return
-    return window.electronAPI.updater.onStatus(setUpdateStatus)
-  }, [])
 
   const checkForUpdates = async () => {
     setUpdateStatus({ status: 'checking' })

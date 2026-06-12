@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "AI-powered smart notepad desktop application",
+  "author": "mr-walter555",
   "main": "electron/main.js",
   "type": "module",
   "engines": {
