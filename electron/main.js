@@ -26,6 +26,8 @@ autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
 autoUpdater.verifyUpdateCodeSignature = false
 
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000
+
 Store.initRenderer()
 
 const store = new Store({
@@ -235,10 +237,11 @@ app.whenReady().then(async () => {
   try { await session.defaultSession.clearCache() } catch {}
   createMainWindow()
 
-  // Silent check on launch so the About settings page can show update
-  // status without the user needing to click "Check for Updates" first.
+  // Silent check on launch, then periodically while the app stays open,
+  // so updates are picked up without the user clicking "Check for Updates".
   if (app.isPackaged) {
     setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 3000)
+    setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), UPDATE_CHECK_INTERVAL_MS)
   }
 
   app.on('activate', () => {
