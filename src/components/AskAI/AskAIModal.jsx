@@ -6,12 +6,13 @@ import {
   Sparkle, X, ArrowUp, FileText, CaretDown, CaretLeft, CaretRight, PlusCircle,
   Copy, Plus, ThumbsUp, ThumbsDown, Microphone, SlidersHorizontal,
   ClockCounterClockwise, Trash, ChatCircleText, PencilSimple,
-  SidebarSimple, PictureInPicture, Check, ArrowClockwise,
+  SidebarSimple, PictureInPicture, Check, ArrowClockwise, Key, Eye, EyeSlash,
 } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
-import { askNotes } from '../../services/aiService'
+import { askNotes, getAIStatus } from '../../services/aiService'
+import { electronService } from '../../services/electronService'
 import { rankNotesByRelevance } from '../../utils/noteSearch'
 import { loadConversations, saveConversation, deleteConversation } from '../../utils/askAIHistory'
 import { formatDate, truncate } from '../../utils/helpers'
@@ -206,6 +207,10 @@ export default function AskAIModal() {
   const [editingText, setEditingText]       = useState('')
   const [copiedIndex, setCopiedIndex]       = useState(null)
   const [transcriptCopied, setTranscriptCopied] = useState(false)
+  const [aiStatus, setAiStatus]   = useState(null)
+  const [apiKey, setApiKey]       = useState('')
+  const [apiKeyVisible, setApiKeyVisible] = useState(false)
+  const [connecting, setConnecting] = useState(false)
   const inputRef     = useRef(null)
   const scrollRef    = useRef(null)
   const layoutMenuRef = useRef(null)
@@ -230,6 +235,38 @@ export default function AskAIModal() {
   }, [phase])
 
   useEffect(() => { if (askAIOpen) inputRef.current?.focus() }, [askAIOpen])
+
+  const checkAIStatus = useCallback(async () => {
+    try {
+      const { configured } = await getAIStatus()
+      setAiStatus(configured ? 'connected' : 'unconfigured')
+    } catch {
+      setAiStatus('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (askAIOpen && aiStatus === null) checkAIStatus()
+  }, [askAIOpen, aiStatus, checkAIStatus])
+
+  const connectAI = async () => {
+    const trimmed = apiKey.trim()
+    if (!trimmed || connecting) return
+    setConnecting(true)
+    await window.electronAPI.settings.set({ openRouterApiKey: trimmed })
+    // The backend restarts to pick up the new key — give it a moment before rechecking.
+    setTimeout(async () => {
+      try {
+        const { configured } = await getAIStatus()
+        setAiStatus(configured ? 'connected' : 'unconfigured')
+        if (configured) toast.success('AI connected')
+        else toast.error('Still not connected — check your key and try again')
+      } catch {
+        setAiStatus('error')
+      }
+      setConnecting(false)
+    }, 1500)
+  }
 
   useEffect(() => {
     if (!layoutMenuOpen) return
@@ -553,7 +590,11 @@ export default function AskAIModal() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Ask anything about your notes</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">I'll search what you've written and answer with sources, cited like [1]</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+                        {aiStatus === 'unconfigured'
+                          ? 'Connect an AI provider below to get started'
+                          : "I'll search what you've written and answer with sources, cited like [1]"}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -742,8 +783,60 @@ export default function AskAIModal() {
         </AnimatePresence>
       </div>
 
+      {/* Connect AI prompt — replaces suggestions + input when no key is configured */}
+      {!historyOpen && aiStatus === 'unconfigured' && (
+        <div className="px-3 pb-3 pt-1 flex-shrink-0">
+          <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-3.5 space-y-2.5">
+            <div className="flex items-start gap-2.5">
+              <Key className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" weight="fill" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Connect AI to ask your notes</p>
+                {electronService.isElectron ? (
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5 leading-relaxed">
+                    Paste a free OpenRouter API key below. Get one at <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">openrouter.ai/keys</code>
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5 leading-relaxed">
+                    Add <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">OPENROUTER_API_KEY</code> to the backend <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">.env</code> and restart the backend.
+                  </p>
+                )}
+              </div>
+            </div>
+            {electronService.isElectron && (
+              <div className="flex gap-1.5">
+                <div className="relative flex-1">
+                  <input
+                    type={apiKeyVisible ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') connectAI() }}
+                    placeholder="sk-or-v1-..."
+                    className="w-full text-xs pl-2.5 pr-8 py-2 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-white dark:bg-gray-900 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setApiKeyVisible(v => !v)}
+                    aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {apiKeyVisible ? <EyeSlash className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <button
+                  onClick={connectAI}
+                  disabled={!apiKey.trim() || connecting}
+                  className="px-3.5 py-2 text-xs font-medium bg-brown-600 hover:bg-brown-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex-shrink-0"
+                >
+                  {connecting ? 'Connecting…' : 'Connect'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Suggestion chips */}
-      {!historyOpen && thread.length === 0 && (
+      {!historyOpen && aiStatus !== 'unconfigured' && thread.length === 0 && (
         <div className="px-4 pb-2.5 flex-shrink-0">
           <div className="flex flex-col gap-1.5">
             {SUGGESTIONS.map(s => (
@@ -760,7 +853,7 @@ export default function AskAIModal() {
       )}
 
       {/* Input */}
-      {!historyOpen && (
+      {!historyOpen && aiStatus !== 'unconfigured' && (
         <div className="px-3 pb-3 pt-1 flex-shrink-0">
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 px-3 pt-2.5 pb-2 focus-within:border-brown-300 dark:focus-within:border-brown-700 transition-colors">
             <textarea

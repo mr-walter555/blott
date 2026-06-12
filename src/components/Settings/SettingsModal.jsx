@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash } from '@phosphor-icons/react'
-import { useUIStore } from '../../store/uiStore'
+import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash, DownloadSimple, Info, FolderOpen } from '@phosphor-icons/react'
+import { useUIStore, FONT_FAMILIES } from '../../store/uiStore'
+import { useNotesStore } from '../../store/notesStore'
 import { electronService } from '../../services/electronService'
 import { getAIStatus } from '../../services/aiService'
 import { MODAL_BACKDROP, MODAL_CONTENT } from '../../utils/motionPresets'
@@ -13,6 +14,7 @@ const SECTIONS = [
   { id: 'ai', label: 'AI', icon: Robot },
   { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
   { id: 'data', label: 'Data', icon: Database },
+  { id: 'about', label: 'About', icon: Info },
 ]
 
 const AI_STATUS_META = {
@@ -20,6 +22,16 @@ const AI_STATUS_META = {
   connected:    { label: 'Connected',         pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400',    dot: 'bg-green-500' },
   unconfigured: { label: 'Not configured',    pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400',    dot: 'bg-amber-500' },
   error:        { label: 'Backend unreachable', pill: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',          dot: 'bg-red-500' },
+}
+
+const UPDATE_STATUS_META = {
+  checking:       { label: 'Checking…',       pill: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',       dot: 'bg-gray-400' },
+  'not-available': { label: 'Up to date',     pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400', dot: 'bg-green-500' },
+  available:      { label: 'Update available', pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
+  downloading:    { label: 'Downloading…',     pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
+  downloaded:     { label: 'Ready to install', pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400', dot: 'bg-green-500' },
+  error:          { label: 'Check failed',     pill: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',        dot: 'bg-red-500' },
+  dev:            { label: 'Dev build',        pill: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',      dot: 'bg-gray-400' },
 }
 
 const SHORTCUTS = [
@@ -48,12 +60,18 @@ export default function SettingsModal() {
   const resolvedTheme = useUIStore(s => s.resolvedTheme)
   const fontSize = useUIStore(s => s.fontSize)
   const setFontSize = useUIStore(s => s.setFontSize)
+  const fontFamily = useUIStore(s => s.fontFamily)
+  const setFontFamily = useUIStore(s => s.setFontFamily)
   const autoSaveInterval = useUIStore(s => s.autoSaveInterval)
   const setAutoSaveInterval = useUIStore(s => s.setAutoSaveInterval)
 
   const [activeSection, setActiveSection] = useState('appearance')
   const [aiStatus, setAiStatus] = useState(null)
   const [encryptionStatus, setEncryptionStatus] = useState(null)
+  const [appInfo, setAppInfo] = useState(null)
+  const [openAtLogin, setOpenAtLoginState] = useState(false)
+  const [openAtLoginSaving, setOpenAtLoginSaving] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState(null)
   const [apiKey, setApiKey] = useState('')
   const [apiKeyVisible, setApiKeyVisible] = useState(false)
   const [apiKeySaved, setApiKeySaved] = useState(false)
@@ -94,18 +112,73 @@ export default function SettingsModal() {
     }
   }, [activeSection])
 
+  useEffect(() => {
+    if (activeSection === 'about' && appInfo === null && electronService.isElectron) {
+      window.electronAPI.app.getInfo().then(info => {
+        setAppInfo(info)
+        setOpenAtLoginState(info.openAtLogin)
+      })
+    }
+  }, [activeSection])
+
+  const toggleOpenAtLogin = async () => {
+    const next = !openAtLogin
+    setOpenAtLoginState(next)
+    setOpenAtLoginSaving(true)
+    await window.electronAPI.app.setOpenAtLogin(next)
+    setOpenAtLoginSaving(false)
+  }
+
+  const openDataFolder = () => window.electronAPI.app.openDataFolder()
+
+  useEffect(() => {
+    if (!electronService.isElectron) return
+    return window.electronAPI.updater.onStatus(setUpdateStatus)
+  }, [])
+
+  const checkForUpdates = async () => {
+    setUpdateStatus({ status: 'checking' })
+    const result = await window.electronAPI.updater.check()
+    if (result.status === 'dev') setUpdateStatus({ status: 'dev' })
+    else if (result.status === 'error') setUpdateStatus({ status: 'error', message: result.message })
+  }
+
+  const downloadUpdate = () => {
+    setUpdateStatus(s => ({ ...s, status: 'downloading', percent: 0 }))
+    window.electronAPI.updater.download()
+  }
+
+  const installUpdate = () => window.electronAPI.updater.install()
+
   const handleSave = async () => {
     // Read fresh from the store rather than the render closure — handleSave is
     // invoked in the same tick as setTheme/setFontSize/setAutoSaveInterval,
     // before React re-renders with the new value, so `theme` etc. here would
     // otherwise still be the previous selection.
-    const { theme, fontSize, autoSaveInterval } = useUIStore.getState()
-    const settings = { theme, fontSize, autoSaveInterval }
+    const { theme, fontSize, fontFamily, autoSaveInterval } = useUIStore.getState()
+    const settings = { theme, fontSize, fontFamily, autoSaveInterval }
     if (electronService.isElectron) {
       await window.electronAPI.settings.set(settings)
     } else {
       localStorage.setItem('sn_settings', JSON.stringify(settings))
     }
+  }
+
+  const handleExportAll = () => {
+    const notes = Object.values(useNotesStore.getState().notes)
+    const payload = {
+      app: 'smart-notepad',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      notes,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `smart-notepad-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -195,6 +268,25 @@ export default function SettingsModal() {
                           }`}
                         >
                           {s}
+                        </button>
+                      ))}
+                    </div>
+                  </SettingRow>
+
+                  <SettingRow label="Font Family" description="Typeface used in the editor">
+                    <div className="flex gap-2">
+                      {Object.entries(FONT_FAMILIES).map(([id, { label, value }]) => (
+                        <button
+                          key={id}
+                          onClick={() => { setFontFamily(id); handleSave() }}
+                          style={{ fontFamily: value }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            fontFamily === id
+                              ? 'bg-brown-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {label}
                         </button>
                       ))}
                     </div>
@@ -315,6 +407,16 @@ export default function SettingsModal() {
                     <div className="text-sm text-green-600 dark:text-green-400 font-medium">✓ Active (offline-first)</div>
                   </SettingRow>
 
+                  <SettingRow label="Export Notes" description="Download a backup of every note as a single JSON file">
+                    <button
+                      onClick={handleExportAll}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <DownloadSimple className="w-4 h-4" />
+                      Export All Notes
+                    </button>
+                  </SettingRow>
+
                   {electronService.isElectron && (
                     <SettingRow
                       label="Encryption"
@@ -328,6 +430,79 @@ export default function SettingsModal() {
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium">✓ Enabled (AES-256-GCM)</div>
                       )}
                     </SettingRow>
+                  )}
+                </>
+              )}
+
+              {activeSection === 'about' && (
+                <>
+                  <SettingRow label="Version" description="Smart Notepad">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                      {electronService.isElectron ? (appInfo?.version ? `v${appInfo.version}` : 'Loading…') : 'Browser'}
+                    </span>
+                  </SettingRow>
+
+                  {electronService.isElectron && (
+                    <>
+                      <SettingRow label="Updates" description="Smart Notepad checks for new versions on launch">
+                        <div className="flex items-center gap-3">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${(UPDATE_STATUS_META[updateStatus?.status] ?? UPDATE_STATUS_META.checking).pill}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${(UPDATE_STATUS_META[updateStatus?.status] ?? UPDATE_STATUS_META.checking).dot}`} />
+                            {updateStatus?.status === 'available' && updateStatus.version
+                              ? `Update available — v${updateStatus.version}`
+                              : updateStatus?.status === 'downloading'
+                                ? `Downloading… ${Math.round(updateStatus.percent || 0)}%`
+                                : updateStatus?.status === 'downloaded' && updateStatus.version
+                                  ? `Ready to install — v${updateStatus.version}`
+                                  : (UPDATE_STATUS_META[updateStatus?.status] ?? UPDATE_STATUS_META.checking).label}
+                          </span>
+
+                          {updateStatus?.status === 'available' && (
+                            <button
+                              onClick={downloadUpdate}
+                              className="flex items-center gap-1 text-xs font-medium text-brown-600 dark:text-brown-400 hover:text-brown-700 dark:hover:text-brown-300 transition-colors"
+                            >
+                              <DownloadSimple className="w-3.5 h-3.5" />
+                              Download
+                            </button>
+                          )}
+
+                          {updateStatus?.status === 'downloaded' && (
+                            <button
+                              onClick={installUpdate}
+                              className="flex items-center gap-1 text-xs font-medium text-brown-600 dark:text-brown-400 hover:text-brown-700 dark:hover:text-brown-300 transition-colors"
+                            >
+                              Restart &amp; Install
+                            </button>
+                          )}
+
+                          {!['downloading', 'downloaded'].includes(updateStatus?.status) && (
+                            <button
+                              onClick={checkForUpdates}
+                              disabled={updateStatus?.status === 'checking' || updateStatus?.status === 'dev'}
+                              className="flex items-center gap-1 text-xs font-medium text-brown-600 dark:text-brown-400 hover:text-brown-700 dark:hover:text-brown-300 disabled:opacity-50 transition-colors"
+                            >
+                              <ArrowsClockwise className={`w-3.5 h-3.5 ${updateStatus?.status === 'checking' ? 'animate-spin' : ''}`} />
+                              Check for Updates
+                            </button>
+                          )}
+                        </div>
+                      </SettingRow>
+
+                      <SettingRow label="Launch at Startup" description="Automatically open Smart Notepad when you log in">
+                        <Toggle checked={openAtLogin} onChange={toggleOpenAtLogin} disabled={openAtLoginSaving} />
+                      </SettingRow>
+
+                      <SettingRow label="Data Folder" description="Where your encrypted notes are stored on disk">
+                        <button
+                          onClick={openDataFolder}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          Open Folder
+                        </button>
+                      </SettingRow>
+                    </>
                   )}
                 </>
               )}
@@ -349,5 +524,25 @@ function SettingRow({ label, description, children }) {
       </div>
       {children}
     </div>
+  )
+}
+
+function Toggle({ checked, onChange, disabled }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      disabled={disabled}
+      className={`relative w-10 h-6 rounded-full transition-colors disabled:opacity-50 ${
+        checked ? 'bg-brown-600' : 'bg-gray-200 dark:bg-gray-700'
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-4' : 'translate-x-0'
+        }`}
+      />
+    </button>
   )
 }

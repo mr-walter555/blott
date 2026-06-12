@@ -17,7 +17,7 @@ import { createLowlight, common } from 'lowlight'
 
 const lowlight = createLowlight(common)
 import { useNotesStore } from '../../store/notesStore'
-import { useUIStore } from '../../store/uiStore'
+import { useUIStore, FONT_FAMILIES } from '../../store/uiStore'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import EditorToolbar from './EditorToolbar'
 import AIActionMenu, { AI_ACTIONS } from './AIActionMenu'
@@ -76,6 +76,7 @@ export default function NoteEditor({ noteId }) {
   const pendingNoteAppend = useNotesStore(s => s.pendingNoteAppend)
   const clearPendingNoteAppend = useNotesStore(s => s.clearPendingNoteAppend)
   const fontSize        = useUIStore(s => s.fontSize)
+  const fontFamily      = useUIStore(s => s.fontFamily)
   const focusMode       = useUIStore(s => s.focusMode)
   const toggleFocusMode = useUIStore(s => s.toggleFocusMode)
 
@@ -217,8 +218,9 @@ export default function NoteEditor({ noteId }) {
     if (editor) {
       const size = fontSize === 'small' ? '14px' : fontSize === 'large' ? '18px' : '16px'
       editor.view.dom.style.fontSize = size
+      editor.view.dom.style.fontFamily = (FONT_FAMILIES[fontFamily] || FONT_FAMILIES.sora).value
     }
-  }, [editor, fontSize])
+  }, [editor, fontSize, fontFamily])
 
   // Trashed notes are read-only — restoring flips the editor back to editable.
   useEffect(() => {
