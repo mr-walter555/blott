@@ -42,6 +42,7 @@ export default function EditorToolbar({ editor }) {
     <button
       onMouseDown={e => { e.preventDefault(); if (!disabled) onClick() }}
       title={title}
+      aria-label={title}
       disabled={disabled}
       className={`p-2 rounded-md text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
         active
@@ -159,6 +160,7 @@ export default function EditorToolbar({ editor }) {
 
       <label
         title="Insert Image(s)"
+        aria-label="Insert Image(s)"
         className="p-2 rounded-md text-sm transition-colors cursor-pointer text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-300"
       >
         <Image className="w-5 h-5 text-black dark:text-white" />

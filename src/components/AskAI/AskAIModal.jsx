@@ -118,6 +118,7 @@ function InlineText({ text, sources, onOpenNote }) {
           onClick={() => onOpenNote(source.id)}
           className="inline-flex items-center justify-center mx-0.5 px-1.5 h-5 rounded-md text-[11px] font-medium bg-brown-100 dark:bg-brown-950/50 text-brown-700 dark:text-brown-400 hover:bg-brown-200 dark:hover:bg-brown-900/60 transition-colors align-middle"
           title={source.title}
+          aria-label={`Source ${citation[1]}: ${source.title}`}
         >
           {citation[1]}
         </button>
@@ -208,6 +209,25 @@ export default function AskAIModal() {
   const inputRef     = useRef(null)
   const scrollRef    = useRef(null)
   const layoutMenuRef = useRef(null)
+
+  // Tracks the panel's mount lifecycle so closing can play a "retract" exit
+  // animation (the reverse of the open animation) before unmounting.
+  const [phase, setPhase] = useState(askAIOpen ? 'open' : 'closed')
+
+  useEffect(() => {
+    if (askAIOpen) {
+      setPhase('open')
+    } else {
+      setPhase(prev => (prev === 'open' ? 'closing' : 'closed'))
+    }
+  }, [askAIOpen])
+
+  useEffect(() => {
+    if (phase !== 'closing') return
+    // Matches the 0.2s duration of both the scale-out and fade-out exit animations.
+    const t = setTimeout(() => setPhase('closed'), 200)
+    return () => clearTimeout(t)
+  }, [phase])
 
   useEffect(() => { if (askAIOpen) inputRef.current?.focus() }, [askAIOpen])
 
@@ -410,15 +430,16 @@ export default function AskAIModal() {
             onClick={() => setHistoryOpen(o => !o)}
             className={`btn-icon ${historyOpen ? 'bg-gray-100 dark:bg-white/[0.08]' : ''}`}
             title="Conversation history"
+            aria-label="Conversation history"
           >
             <ClockCounterClockwise className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
-          <button onClick={copyTranscript} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="Copy conversation">
+          <button onClick={copyTranscript} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="Copy conversation" aria-label="Copy conversation">
             {transcriptCopied
               ? <Check className="w-4 h-4 text-green-500" weight="bold" />
               : <Copy className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
           </button>
-          <button onClick={newConversation} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="New conversation">
+          <button onClick={newConversation} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="New conversation" aria-label="New conversation">
             <PlusCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
 
@@ -428,6 +449,7 @@ export default function AskAIModal() {
               onClick={() => setLayoutMenuOpen(o => !o)}
               className={`btn-icon ${layoutMenuOpen ? 'bg-gray-100 dark:bg-white/[0.08]' : ''}`}
               title="Chat layout"
+              aria-label="Chat layout"
             >
               {(() => { const L = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0]; return <L.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" /> })()}
             </button>
@@ -457,7 +479,7 @@ export default function AskAIModal() {
           </div>
 
           <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
-          <button onClick={closeAskAI} className="btn-icon" title="Close">
+          <button onClick={closeAskAI} className="btn-icon" title="Close" aria-label="Close">
             <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
@@ -505,6 +527,7 @@ export default function AskAIModal() {
                         onClick={(e) => removeConversation(e, conv.id)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex-shrink-0"
                         title="Delete conversation"
+                        aria-label="Delete conversation"
                       >
                         <Trash className="w-3.5 h-3.5" />
                       </button>
@@ -581,6 +604,7 @@ export default function AskAIModal() {
                                 disabled={!editingText.trim()}
                                 className="flex items-center justify-center w-7 h-7 rounded-lg bg-brown-600 hover:bg-brown-700 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
                                 title="Send edit"
+                                aria-label="Send edit"
                               >
                                 <ArrowUp className="w-3.5 h-3.5" weight="bold" />
                               </button>
@@ -594,6 +618,7 @@ export default function AskAIModal() {
                           onClick={() => { setEditingIndex(i); setEditingText(turn.question) }}
                           className="opacity-0 group-hover:opacity-100 btn-icon !w-6 !h-6 transition-opacity flex-shrink-0"
                           title="Edit message"
+                          aria-label="Edit message"
                         >
                           <PencilSimple className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                         </button>
@@ -619,6 +644,7 @@ export default function AskAIModal() {
                                   disabled={vi === 0}
                                   className="flex items-center justify-center w-5 h-5 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
                                   title="Previous response"
+                                  aria-label="Previous response"
                                 >
                                   <CaretLeft className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                                 </button>
@@ -630,17 +656,18 @@ export default function AskAIModal() {
                                   disabled={vi === versions.length - 1}
                                   className="flex items-center justify-center w-5 h-5 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
                                   title="Next response"
+                                  aria-label="Next response"
                                 >
                                   <CaretRight className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                                 </button>
                               </div>
                             )}
-                            <button onClick={() => copyAnswer(i, current.answer)} className="btn-icon !w-7 !h-7" title="Copy answer">
+                            <button onClick={() => copyAnswer(i, current.answer)} className="btn-icon !w-7 !h-7" title="Copy answer" aria-label="Copy answer">
                               {copiedIndex === i
                                 ? <Check className="w-3.5 h-3.5 text-green-500" weight="bold" />
                                 : <Copy className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
                             </button>
-                            <button onClick={() => addToNote(current.answer)} className="btn-icon !w-7 !h-7" title="Add to note">
+                            <button onClick={() => addToNote(current.answer)} className="btn-icon !w-7 !h-7" title="Add to note" aria-label="Add to note">
                               <Plus className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                             </button>
                             <button
@@ -648,17 +675,18 @@ export default function AskAIModal() {
                               disabled={loading}
                               className="btn-icon !w-7 !h-7 disabled:opacity-30 disabled:cursor-not-allowed"
                               title="Regenerate response"
+                              aria-label="Regenerate response"
                             >
                               <ArrowClockwise className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                             </button>
                             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
-                            <button onClick={() => setFeedback(i, 'up')} className="btn-icon !w-7 !h-7" title="Good response">
+                            <button onClick={() => setFeedback(i, 'up')} className="btn-icon !w-7 !h-7" title="Good response" aria-label="Good response">
                               <ThumbsUp
                                 className={`w-3.5 h-3.5 ${current.feedback === 'up' ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`}
                                 weight={current.feedback === 'up' ? 'fill' : 'regular'}
                               />
                             </button>
-                            <button onClick={() => setFeedback(i, 'down')} className="btn-icon !w-7 !h-7" title="Bad response">
+                            <button onClick={() => setFeedback(i, 'down')} className="btn-icon !w-7 !h-7" title="Bad response" aria-label="Bad response">
                               <ThumbsDown
                                 className={`w-3.5 h-3.5 ${current.feedback === 'down' ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`}
                                 weight={current.feedback === 'down' ? 'fill' : 'regular'}
@@ -704,6 +732,7 @@ export default function AskAIModal() {
                   onClick={() => scrollToBottom()}
                   className="absolute bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gray-900/90 dark:bg-gray-100/90 text-white dark:text-gray-900 flex items-center justify-center shadow-lg hover:bg-gray-900 dark:hover:bg-white transition-colors"
                   title="Jump to latest"
+                  aria-label="Jump to latest"
                 >
                   <CaretDown className="w-4 h-4" weight="bold" />
                 </motion.button>
@@ -716,12 +745,12 @@ export default function AskAIModal() {
       {/* Suggestion chips */}
       {!historyOpen && thread.length === 0 && (
         <div className="px-4 pb-2.5 flex-shrink-0">
-          <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex flex-col gap-1.5">
             {SUGGESTIONS.map(s => (
               <button
                 key={s}
                 onClick={() => ask(s)}
-                className="flex-shrink-0 text-left text-xs px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors whitespace-nowrap"
+                className="self-start text-left text-xs px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors whitespace-nowrap"
               >
                 {s}
               </button>
@@ -745,7 +774,7 @@ export default function AskAIModal() {
             />
             <div className="flex items-center justify-between mt-1.5">
               <div className="flex items-center gap-1">
-                <button className="btn-icon !w-7 !h-7" title="Add context">
+                <button className="btn-icon !w-7 !h-7" title="Add context" aria-label="Add context">
                   <Plus className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 </button>
                 <button className="flex items-center gap-1 px-2 h-7 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
@@ -754,7 +783,7 @@ export default function AskAIModal() {
                 </button>
               </div>
               <div className="flex items-center gap-0.5">
-                <button className="btn-icon !w-7 !h-7" title="Voice input">
+                <button className="btn-icon !w-7 !h-7" title="Voice input" aria-label="Voice input">
                   <Microphone className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 </button>
                 <button
@@ -774,48 +803,34 @@ export default function AskAIModal() {
 
   // ── Rendering ──────────────────────────────────────────────────────────────
 
-  // Both modes live under one AnimatePresence so switching layouts crossfades
-  // the old panel out while the new one fades/pops in, instead of one
-  // disappearing instantly while the other animates.
   const slot = document.getElementById('ai-sidebar-slot')
 
   return (
-    <AnimatePresence>
+    <>
       {/* Sidebar mode: portal panel into the GSAP-animated slot inside MainLayout.
-          The slot's width animation (0 ↔ 384px) creates the "push content" effect */}
-      {askAIOpen && layoutId === 'sidebar' && slot && createPortal(
-        <motion.div
-          key="sidebar-panel"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.25, delay: 0.15 } }}
-          exit={{ opacity: 0, transition: { duration: 0.15 } }}
-          className="bg-white dark:bg-gray-900 h-full flex flex-col overflow-hidden"
-        >
+          The slot's width animation (0 ↔ 384px) creates the "push content" effect.
+          Fades in on mount and fades out on close (reverse of the open animation)
+          so it doesn't pop abruptly while the slot expands/collapses. */}
+      {phase !== 'closed' && layoutId === 'sidebar' && slot && createPortal(
+        <div className={`bg-white dark:bg-gray-900 h-full flex flex-col overflow-hidden ${phase === 'closing' ? 'animate-fade-out' : 'animate-fade-in'}`}>
           {panel}
-        </motion.div>,
+        </div>,
         slot
       )}
 
-      {/* Floating mode: animated overlay that expands from the FAB (bottom-right origin) */}
-      {askAIOpen && layoutId === 'floating' && (
-        <div key="floating-overlay" className="fixed inset-0 z-50 pointer-events-none">
-          <motion.div
-            initial={{ scale: 0.05, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.05, opacity: 0 }}
-            style={{ transformOrigin: 'bottom right' }}
-            transition={{
-              scale: { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 },
-              opacity: { duration: 0.12 },
-            }}
-            className="pointer-events-auto absolute right-3 bottom-3 w-[30rem] h-[34rem] max-h-[calc(100%-1.5rem)] flex flex-col"
-          >
+      {/* Floating mode: overlay that pops in from / retracts back into the FAB
+          (bottom-right origin). Plain conditional render (no AnimatePresence) so
+          switching back and forth always mounts/unmounts cleanly in both directions;
+          the closing phase plays the reverse scale animation before unmounting. */}
+      {phase !== 'closed' && layoutId === 'floating' && (
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          <div className={`pointer-events-auto absolute right-3 bottom-3 w-[30rem] h-[34rem] max-h-[calc(100%-1.5rem)] flex flex-col origin-bottom-right ${phase === 'closing' ? 'animate-scale-out' : 'animate-scale-in'}`}>
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full">
               {panel}
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-    </AnimatePresence>
+    </>
   )
 }

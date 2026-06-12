@@ -9,6 +9,9 @@ const PushPin = (props) => <PushPinRaw {...props} style={{ ...props.style, trans
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import { stripHtml } from '../../utils/helpers'
+import { MODAL_BACKDROP, MODAL_CONTENT } from '../../utils/motionPresets'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
+import EmptyState from '../common/EmptyState'
 
 const STATIC_COMMAND_DEFS = [
   { id: 'new-note',        label: 'New Note',      icon: Plus,     category: 'Actions'  },
@@ -29,6 +32,7 @@ export default function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef(null)
   const listRef = useRef(null)
+  const dialogRef = useFocusTrap()
 
   const closeCommandPalette = useUIStore(s => s.closeCommandPalette)
   const setActiveView = useUIStore(s => s.setActiveView)
@@ -124,22 +128,17 @@ export default function CommandPalette() {
   return (
     <>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        {...MODAL_BACKDROP}
         onClick={closeCommandPalette}
         className="fixed inset-0 z-50 bg-black/40"
       />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.08 }}
+        {...MODAL_CONTENT}
         className="w-full max-w-xl pointer-events-auto"
       >
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Command palette" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
           {/* Search */}
           <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 dark:border-gray-800">
             <MagnifyingGlass className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
@@ -158,11 +157,11 @@ export default function CommandPalette() {
           {/* Results */}
           <div ref={listRef} className="max-h-[32rem] overflow-y-auto py-2">
             {allItems.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-center text-gray-400">No results</p>
+              <EmptyState message="No results" className="py-6" />
             ) : (
               Object.entries(groups).map(([category, items]) => (
                 <div key={category}>
-                  <p className="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider">
+                  <p className="px-4 py-1.5 section-label">
                     {category}
                   </p>
                   {items.map(item => {

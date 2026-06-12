@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Geist Variable', 'sans-serif'],
+        sans: ['Sora Variable', 'sans-serif'],
       },
       colors: {
         // Neutral near-black scale for dark mode — replaces Tailwind's default
@@ -34,13 +34,19 @@ export default {
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
+        'fade-out': 'fadeOut 0.2s ease-in forwards',
         'slide-up': 'slideUp 0.25s ease-out',
         'slide-in-left': 'slideInLeft 0.2s ease-out',
+        'scale-in': 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'scale-out': 'scaleOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards',
       },
       keyframes: {
         fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+        fadeOut: { from: { opacity: 1 }, to: { opacity: 0 } },
         slideUp: { from: { opacity: 0, transform: 'translateY(8px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
         slideInLeft: { from: { opacity: 0, transform: 'translateX(-8px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+        scaleIn: { from: { opacity: 0, transform: 'scale(0.05)' }, to: { opacity: 1, transform: 'scale(1)' } },
+        scaleOut: { from: { opacity: 1, transform: 'scale(1)' }, to: { opacity: 0, transform: 'scale(0.05)' } },
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0,0,0,0.07), 0 10px 20px -2px rgba(0,0,0,0.04)',

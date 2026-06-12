@@ -56,15 +56,15 @@ function AILoadingBar({ label, top, scrollRef, onStop }) {
       className="fixed z-50"
       style={{ top, left: paddedLeft, width: paddedWidth }}
     >
-      <div className="flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm w-full">
-        <svg className="w-4 h-4 text-gray-400 flex-shrink-0 animate-spin" viewBox="0 0 24 24" fill="none">
+      <div className="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm w-full">
+        <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 animate-spin" viewBox="0 0 24 24" fill="none">
           <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
           <path d="M12 2a10 10 0 0 0-10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity="0.3"/>
         </svg>
-        <span className="text-sm text-gray-400 flex-1">{label}…</span>
+        <span className="text-sm text-gray-400 dark:text-gray-500 flex-1">{label}…</span>
         <button onMouseDown={e => { e.preventDefault(); onStop() }}
-          className="w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 flex items-center justify-center flex-shrink-0 transition-colors" title="Stop">
-          <div className="w-2.5 h-2.5 rounded-sm bg-gray-500" />
+          className="w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 flex items-center justify-center flex-shrink-0 transition-colors" title="Stop" aria-label="Stop">
+          <div className="w-2.5 h-2.5 rounded-sm bg-gray-500 dark:bg-gray-300" />
         </button>
       </div>
     </motion.div>
@@ -86,6 +86,7 @@ export default function NoteEditor({ noteId }) {
   const [aiResult,  setAiResult]  = useState(null)
   const [aiLoadingVer, setAiLoadingVer] = useState(0)
   const aiLoadingRef = useRef(null)
+  const aiAbortRef = useRef(null)
   const menuRef = useRef(null)
 
   const aiLoading = aiLoadingRef.current
@@ -115,7 +116,7 @@ export default function NoteEditor({ noteId }) {
     return () => window.removeEventListener('keydown', handler)
   }, [focusMode, toggleFocusMode])
 
-  const saveNow = useAutoSave(noteId, content, title, note?.shareToken, {
+  const saveNow = useAutoSave(noteId, content, title, {
     onSaving: () => setSaveStatus('saving'),
     onSaved:  () => setSaveStatus('saved'),
     onError:  () => setSaveStatus('error'),
@@ -149,6 +150,7 @@ export default function NoteEditor({ noteId }) {
       Color,
     ],
     content: note?.content || '',
+    editable: !note?.trashed,
     editorProps: {
       attributes: {
         class: 'tiptap-editor ProseMirror min-h-full focus:outline-none',
@@ -218,6 +220,11 @@ export default function NoteEditor({ noteId }) {
     }
   }, [editor, fontSize])
 
+  // Trashed notes are read-only — restoring flips the editor back to editable.
+  useEffect(() => {
+    editor?.setEditable(!note?.trashed)
+  }, [editor, note?.trashed])
+
   useEffect(() => {
     if (!menuPos) return
     const close = (e) => {
@@ -246,11 +253,14 @@ export default function NoteEditor({ noteId }) {
     const barTop = Math.min(Math.max(coords.bottom + 10, 60), window.innerHeight - 64)
     showLoading({ label: action?.label || 'Processing', top: barTop, left: coords.left })
 
+    aiAbortRef.current = new AbortController()
+
     try {
-      const result = await processText(actionId, text)
+      const result = await processText(actionId, text, { signal: aiAbortRef.current.signal })
       setAiResult({ text: result, actionId, selFrom: from, selTo: to, x: coords.left, y: coords.bottom, editorRect })
     } catch (err) {
-      setAiResult({ text: `⚠️ ${err?.response?.data?.error || err.message || 'AI not available'}`, actionId, selFrom: from, selTo: to, x: coords.left, y: coords.bottom, editorRect })
+      if (err.code === 'ERR_CANCELED') return
+      setAiResult({ error: err?.response?.data?.error || err.message || 'AI not available', actionId, selFrom: from, selTo: to, x: coords.left, y: coords.bottom, editorRect })
     } finally {
       hideLoading()
     }
@@ -271,7 +281,7 @@ export default function NoteEditor({ noteId }) {
   const handleTitleChange = (e) => { setTitle(e.target.value); setSaveStatus('unsaved') }
 
   const handleContextMenu = (e) => {
-    if (!editor) return
+    if (!editor || note?.trashed) return
     const { from, to } = editor.state.selection
     const hasSelection = from !== to && !editor.isActive('codeBlock')
     if (!hasSelection) return
@@ -296,7 +306,7 @@ export default function NoteEditor({ noteId }) {
 
         {/* Voice memo player */}
 
-        <EditorToolbar editor={editor} />
+        {!note.trashed && <EditorToolbar editor={editor} />}
 
         <div className="flex-1 flex overflow-hidden relative">
           <div className="flex-1 overflow-y-auto tiptap-scroll" ref={scrollRef} onScroll={handleScroll} style={{scrollbarWidth:'none'}}>
@@ -306,8 +316,9 @@ export default function NoteEditor({ noteId }) {
               value={title}
               onChange={handleTitleChange}
               onKeyDown={handleTitleKeyDown}
+              readOnly={note.trashed}
               placeholder="Untitled"
-              className="w-full text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 mb-4 resize-none leading-tight"
+              className={`w-full text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 mb-4 resize-none leading-tight ${note.trashed ? 'cursor-default' : ''}`}
             />
             <div className="tiptap-editor" onContextMenu={handleContextMenu}>
               <EditorContent editor={editor} />
@@ -321,7 +332,7 @@ export default function NoteEditor({ noteId }) {
               const active = Math.round(scrollPct * 15) === i
               return (
                 <div key={i} className={`rounded-full transition-all duration-150 ${
-                  active ? 'w-4 bg-gray-600' : 'w-3 bg-gray-300'
+                  active ? 'w-4 bg-gray-600 dark:bg-gray-400' : 'w-3 bg-gray-300 dark:bg-gray-700'
                 }`} style={{ height: active ? 3 : 2 }} />
               )
             })}
@@ -329,12 +340,14 @@ export default function NoteEditor({ noteId }) {
         </div>
 
         {/* AI action menu */}
-        {menuPos && editor && (
-          <div ref={menuRef} className="fixed z-50"
-            style={{ top: Math.min(menuPos.y + 8, window.innerHeight - 420), left: Math.min(menuPos.x + 4, window.innerWidth - 240) }}>
-            <AIActionMenu onSelect={id => { setMenuPos(null); handleAIAction(id) }} />
-          </div>
-        )}
+        <AnimatePresence>
+          {menuPos && editor && (
+            <div ref={menuRef} className="fixed z-50"
+              style={{ top: Math.min(menuPos.y + 8, window.innerHeight - 420), left: Math.min(menuPos.x + 4, window.innerWidth - 240) }}>
+              <AIActionMenu onSelect={id => { setMenuPos(null); handleAIAction(id) }} />
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Loading bar + result panel — single AnimatePresence for seamless handoff */}
         <AnimatePresence mode="wait">
@@ -344,12 +357,12 @@ export default function NoteEditor({ noteId }) {
               label={aiLoading.label}
               top={aiLoading.top}
               scrollRef={scrollRef}
-              onStop={() => hideLoading()}
+              onStop={() => { aiAbortRef.current?.abort(); hideLoading() }}
             />
           ) : aiResult ? (
             <AIResultPanel
               key="result"
-              result={aiResult.text}
+              result={aiResult}
               actionLabel={AI_ACTIONS.find(a => a.id === aiResult.actionId)?.label || 'Result'}
               showReplace={AI_ACTIONS.find(a => a.id === aiResult.actionId)?.showReplace ?? true}
               showInsert={AI_ACTIONS.find(a => a.id === aiResult.actionId)?.showInsert ?? true}
@@ -372,8 +385,8 @@ export default function NoteEditor({ noteId }) {
           <span className={
             saveStatus === 'error'   ? 'text-red-400' :
             saveStatus === 'unsaved' ? 'text-amber-400' :
-            saveStatus === 'saving'  ? 'text-gray-400' :
-            'text-gray-400'
+            saveStatus === 'saving'  ? 'text-gray-400 dark:text-gray-500' :
+            'text-gray-400 dark:text-gray-500'
           }>
             {saveStatus === 'error'   ? 'Failed to save' :
              saveStatus === 'unsaved' ? 'Unsaved changes' :

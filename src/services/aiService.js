@@ -5,8 +5,13 @@ const BASE = `${API_URL}/api/ai`
 
 const api = axios.create({ baseURL: BASE, timeout: 30000 })
 
-export async function processText(action, text) {
-  const { data } = await api.post('/process', { action, text })
+export async function getAIStatus() {
+  const { data } = await api.get('/status')
+  return data
+}
+
+export async function processText(action, text, { signal } = {}) {
+  const { data } = await api.post('/process', { action, text }, { signal })
   return data.result
 }
 

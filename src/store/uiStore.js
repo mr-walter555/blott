@@ -22,7 +22,7 @@ export const useUIStore = create((set, get) => ({
   searchQuery: '',
   fontSize: 'medium',
   autoSaveInterval: 2000,
-  fontFamily: 'Geist Variable',
+  fontFamily: 'Sora Variable',
   focusMode: false,
 
   setTheme: (theme) => set({ theme }),
@@ -50,6 +50,6 @@ export const useUIStore = create((set, get) => ({
     theme: settings.theme ?? 'system',
     fontSize: settings.fontSize ?? 'medium',
     autoSaveInterval: settings.autoSaveInterval ?? 2000,
-    fontFamily: settings.fontFamily ?? 'Geist Variable',
+    fontFamily: settings.fontFamily ?? 'Sora Variable',
   }),
 }))

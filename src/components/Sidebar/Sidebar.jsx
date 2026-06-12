@@ -10,6 +10,7 @@ import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import WorkspaceSection from './WorkspaceSection'
 import TrashModal from './TrashModal'
+import EmptyState from '../common/EmptyState'
 import { GUIDE_NOTE_ID } from '../../utils/guideNote'
 
 const PushPin = (props) => <PushPinRaw {...props} style={{ transform: 'rotate(-45deg)' }} />
@@ -100,7 +101,7 @@ export default function Sidebar() {
 
       {/* Header */}
       <div className={`flex items-center pt-4 pb-2 transition-all duration-250 ${c ? 'justify-center px-0' : 'justify-between px-3'}`}>
-        <button onClick={toggleSidebar} className="btn-icon flex-shrink-0" title={c ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <button onClick={toggleSidebar} className="btn-icon flex-shrink-0" title={c ? 'Expand sidebar' : 'Collapse sidebar'} aria-label={c ? 'Expand sidebar' : 'Collapse sidebar'}>
           <SidebarSimple className="w-5 h-5 text-black dark:text-white" />
         </button>
       </div>
@@ -109,10 +110,10 @@ export default function Sidebar() {
       <div className={`pt-1 pb-3 transition-all duration-250 ${c ? 'px-1.5 space-y-1.5' : 'px-3'}`}>
         {c ? (
           <>
-            <button onClick={openCommandPalette} title="Quick search" className="w-full flex items-center justify-center p-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <button onClick={openCommandPalette} title="Quick search" aria-label="Quick search" className="w-full flex items-center justify-center p-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <MagnifyingGlass className="w-5 h-5 text-black dark:text-white" />
             </button>
-            <button onClick={handleNewNote} title="New Note" className="w-full flex items-center justify-center p-2 rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors">
+            <button onClick={handleNewNote} title="New Note" aria-label="New Note" className="w-full flex items-center justify-center p-2 rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors">
               <Plus className="w-5 h-5 text-white" />
             </button>
           </>
@@ -129,6 +130,7 @@ export default function Sidebar() {
             <button
               onClick={handleNewNote}
               title="New Note  Ctrl+N"
+              aria-label="New Note (Ctrl+N)"
               className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4 text-white" weight="bold" />
@@ -151,19 +153,17 @@ export default function Sidebar() {
             >
               {/* Recents label */}
               <div className="px-4 pt-2 pb-1">
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Recents</span>
+                <span className="section-label">Recents</span>
               </div>
 
               {/* Note rows */}
               {recentNotes.length === 0 ? (
-                <div className="px-4 py-3">
-                  <p className="text-xs text-gray-400">No notes yet</p>
-                </div>
+                <EmptyState message="No notes yet" className="py-3" />
               ) : (
                 recentNotes.map(note => (
                   <div key={note.id} className="relative group">
                     {renamingId === note.id ? (
-                      <div className="flex items-center gap-2 px-4 py-1.5">
+                      <div className="flex items-center gap-2 px-3 py-2">
                         <NoteIcon note={note} />
                         <input
                           ref={renameRef}
@@ -181,7 +181,7 @@ export default function Sidebar() {
                     ) : (
                       <button
                         onClick={() => setSelectedNote(note.id)}
-                        className={`w-full flex items-center gap-2.5 px-4 py-1.5 text-left transition-colors ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
                           note.id === selectedNoteId
                             ? 'bg-gray-200/70 dark:bg-gray-800'
                             : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
@@ -258,6 +258,7 @@ export default function Sidebar() {
         <button
           onClick={openSettings}
           title="Settings"
+          aria-label="Settings"
           className={`sidebar-item ${c ? 'w-full justify-center px-0' : 'flex-1'}`}
         >
           <GearSix className="w-5 h-5 text-black dark:text-white" />
@@ -287,7 +288,7 @@ export default function Sidebar() {
               </div>
 
               <button
-                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null); toast(note.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: '⭐' }) }}
+                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null); toast(note.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: <Star className="w-4 h-4 text-yellow-400" weight="fill" /> }) }}
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
                 <Star className={`w-4 h-4 ${note.favorite ? 'text-yellow-400' : 'text-gray-400 dark:text-gray-500'}`} weight={note.favorite ? 'fill' : 'regular'} />
@@ -295,7 +296,7 @@ export default function Sidebar() {
               </button>
 
               <button
-                onClick={() => { updateNote(note.id, { pinned: !note.pinned }); setMenu(null); toast(note.pinned ? 'Note unpinned' : 'Note pinned', { icon: '📌' }) }}
+                onClick={() => { updateNote(note.id, { pinned: !note.pinned }); setMenu(null); toast(note.pinned ? 'Note unpinned' : 'Note pinned', { icon: <PushPin className="w-4 h-4 text-brown-500" weight="fill" /> }) }}
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
                 <PushPin className={`w-4 h-4 ${note.pinned ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`} weight={note.pinned ? 'fill' : 'regular'} />
@@ -314,7 +315,7 @@ export default function Sidebar() {
                 <>
                   <div className="mx-3 my-1 border-t border-gray-100 dark:border-gray-700" />
                   <button
-                    onClick={() => { trashNote(note.id, true); setMenu(null); toast('Moved to trash', { icon: '🗑️' }) }}
+                    onClick={() => { trashNote(note.id, true); setMenu(null); toast('Moved to trash', { icon: <Trash className="w-4 h-4 text-red-500" /> }) }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                   >
                     <Trash className="w-4 h-4" />

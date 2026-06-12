@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/sora": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
     "@tiptap/extension-character-count": "^2.1.13",
     "@tiptap/extension-code-block-lowlight": "^2.27.2",

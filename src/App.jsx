@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
 import MainLayout from './pages/MainLayout'
 import StickyNote from './pages/StickyNote'
-import SharePage from './pages/SharePage'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import SettingsModal from './components/Settings/SettingsModal'
 import AskAIModal from './components/AskAI/AskAIModal'
@@ -16,9 +15,6 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 const params = new URLSearchParams(window.location.search)
 const isStickyMode = params.get('mode') === 'sticky'
 const stickyNoteId = params.get('noteId')
-
-const shareMatch = window.location.pathname.match(/^\/share\/([^/]+)/)
-const shareToken = shareMatch ? shareMatch[1] : null
 
 export default function App() {
   useTheme()
@@ -35,8 +31,6 @@ export default function App() {
     initNotes()
     initWorkspaces()
   }, [initNotes, initWorkspaces])
-
-  if (shareToken) return <SharePage token={shareToken} />
 
   if (isStickyMode && stickyNoteId) {
     return <StickyNote noteId={stickyNoteId} />

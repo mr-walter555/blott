@@ -1,18 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Palette, TextT, Keyboard, Database, Robot, User } from '@phosphor-icons/react'
+import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash } from '@phosphor-icons/react'
 import { useUIStore } from '../../store/uiStore'
 import { electronService } from '../../services/electronService'
-import { gravatarUrl } from '../../utils/gravatar'
+import { getAIStatus } from '../../services/aiService'
+import { MODAL_BACKDROP, MODAL_CONTENT } from '../../utils/motionPresets'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 const SECTIONS = [
-  { id: 'profile', label: 'Profile', icon: User },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'editor', label: 'Editor', icon: TextT },
   { id: 'ai', label: 'AI', icon: Robot },
   { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
   { id: 'data', label: 'Data', icon: Database },
 ]
+
+const AI_STATUS_META = {
+  checking:     { label: 'Checking…',         pill: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',          dot: 'bg-gray-400' },
+  connected:    { label: 'Connected',         pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400',    dot: 'bg-green-500' },
+  unconfigured: { label: 'Not configured',    pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400',    dot: 'bg-amber-500' },
+  error:        { label: 'Backend unreachable', pill: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',          dot: 'bg-red-500' },
+}
 
 const SHORTCUTS = [
   { keys: 'Ctrl+N', action: 'New note' },
@@ -43,17 +51,48 @@ export default function SettingsModal() {
   const autoSaveInterval = useUIStore(s => s.autoSaveInterval)
   const setAutoSaveInterval = useUIStore(s => s.setAutoSaveInterval)
 
-  const [activeSection, setActiveSection] = useState('profile')
-  const [profileName, setProfileName] = useState(() => localStorage.getItem('sn_user_name') || '')
-  const [profileEmail, setProfileEmail] = useState(() => localStorage.getItem('sn_user_email') || '')
-  const [profileSaved, setProfileSaved] = useState(false)
+  const [activeSection, setActiveSection] = useState('appearance')
+  const [aiStatus, setAiStatus] = useState(null)
+  const [encryptionStatus, setEncryptionStatus] = useState(null)
+  const [apiKey, setApiKey] = useState('')
+  const [apiKeyVisible, setApiKeyVisible] = useState(false)
+  const [apiKeySaved, setApiKeySaved] = useState(false)
+  const dialogRef = useFocusTrap()
 
-  const saveProfile = () => {
-    localStorage.setItem('sn_user_name', profileName.trim())
-    localStorage.setItem('sn_user_email', profileEmail.trim().toLowerCase())
-    setProfileSaved(true)
-    setTimeout(() => setProfileSaved(false), 2000)
+  const checkAIStatus = async () => {
+    setAiStatus('checking')
+    try {
+      const { configured } = await getAIStatus()
+      setAiStatus(configured ? 'connected' : 'unconfigured')
+    } catch {
+      setAiStatus('error')
+    }
   }
+
+  useEffect(() => {
+    if (activeSection === 'ai' && aiStatus === null) checkAIStatus()
+  }, [activeSection])
+
+  useEffect(() => {
+    if (electronService.isElectron) {
+      window.electronAPI.settings.get().then(s => setApiKey(s.openRouterApiKey || ''))
+    }
+  }, [])
+
+  const saveApiKey = async () => {
+    await window.electronAPI.settings.set({ openRouterApiKey: apiKey.trim() })
+    setApiKeySaved(true)
+    setTimeout(() => setApiKeySaved(false), 2000)
+    // The backend restarts to pick up the new key — give it a moment before rechecking.
+    setAiStatus('checking')
+    setTimeout(checkAIStatus, 1500)
+  }
+
+  useEffect(() => {
+    if (activeSection === 'data' && encryptionStatus === null && electronService.isElectron) {
+      window.electronAPI.encryption.getStatus().then(setEncryptionStatus)
+    }
+  }, [activeSection])
 
   const handleSave = async () => {
     // Read fresh from the store rather than the render closure — handleSave is
@@ -72,25 +111,20 @@ export default function SettingsModal() {
   return (
     <>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        {...MODAL_BACKDROP}
         onClick={closeSettings}
         className="fixed inset-0 z-50 bg-black/40"
       />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.08 }}
-        className="pointer-events-auto w-full max-w-2xl h-[75vh] flex flex-col"
+        {...MODAL_CONTENT}
+        className="pointer-events-auto w-full max-w-2xl h-[min(75vh,600px)] flex flex-col"
       >
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full">
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
+            <h2 id="settings-modal-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
             <button onClick={closeSettings} className="btn-icon">
               <X className="w-5 h-5 text-black dark:text-white" />
             </button>
@@ -109,7 +143,7 @@ export default function SettingsModal() {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                   }`}
                 >
-                  <Icon className="w-5 h-5 text-black dark:text-white" />
+                  <Icon className="w-5 h-5" />
                   {label}
                 </button>
               ))}
@@ -117,46 +151,6 @@ export default function SettingsModal() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-              {activeSection === 'profile' && (
-                <>
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-brown-100 flex-shrink-0 flex items-center justify-center">
-                      {profileEmail
-                        ? <img src={gravatarUrl(profileEmail, 56)} alt="avatar" className="w-full h-full object-cover" onError={e => { e.target.style.display='none' }} />
-                        : <span className="text-xl font-semibold text-brown-600">{(profileName || '?')[0].toUpperCase()}</span>
-                      }
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{profileName || 'Your Name'}</p>
-                      <p className="text-xs text-gray-400">{profileEmail || 'your@email.com'}</p>
-                    </div>
-                  </div>
-                  <SettingRow label="Display Name" description="Shown when you share notes with others">
-                    <input
-                      value={profileName}
-                      onChange={e => setProfileName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100"
-                    />
-                  </SettingRow>
-                  <SettingRow label="Email" description="Used for your avatar (Gravatar) in shared notes">
-                    <input
-                      type="email"
-                      value={profileEmail}
-                      onChange={e => setProfileEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100"
-                    />
-                  </SettingRow>
-                  <button
-                    onClick={saveProfile}
-                    className="px-4 py-2 text-sm font-medium bg-brown-600 hover:bg-brown-700 text-white rounded-lg transition-colors"
-                  >
-                    {profileSaved ? '✓ Saved' : 'Save Profile'}
-                  </button>
-                </>
-              )}
-
               {activeSection === 'appearance' && (
                 <>
                   <SettingRow
@@ -227,15 +221,74 @@ export default function SettingsModal() {
               )}
 
               {activeSection === 'ai' && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4">
-                  <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-1">Setup Instructions</p>
-                  <ol className="text-xs text-amber-600 dark:text-amber-500 space-y-1 list-decimal list-inside">
-                    <li>Copy <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">.env.example</code> to <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">.env</code> in the backend folder</li>
-                    <li>Add your OpenRouter API key as <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">OPENROUTER_API_KEY</code> in the .env file</li>
-                    <li>Run <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">npm run dev:backend</code> in a terminal</li>
-                    <li>AI features will work automatically</li>
-                  </ol>
-                </div>
+                <>
+                  {electronService.isElectron && (
+                    <SettingRow label="OpenRouter API Key" description="Powers Ask AI and writing tools. Get a free key at openrouter.ai/keys">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={apiKeyVisible ? 'text' : 'password'}
+                            value={apiKey}
+                            onChange={e => setApiKey(e.target.value)}
+                            placeholder="sk-or-v1-..."
+                            className="w-full text-sm pl-3 pr-9 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setApiKeyVisible(v => !v)}
+                            aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            {apiKeyVisible ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        <button
+                          onClick={saveApiKey}
+                          className="px-4 py-2 text-sm font-medium bg-brown-600 hover:bg-brown-700 text-white rounded-lg transition-colors flex-shrink-0"
+                        >
+                          {apiKeySaved ? '✓ Saved' : 'Save'}
+                        </button>
+                      </div>
+                    </SettingRow>
+                  )}
+
+                  <SettingRow label="AI Connection" description="Status of the AI backend used for Ask AI and writing tools">
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${(AI_STATUS_META[aiStatus] ?? AI_STATUS_META.checking).pill}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${(AI_STATUS_META[aiStatus] ?? AI_STATUS_META.checking).dot}`} />
+                        {(AI_STATUS_META[aiStatus] ?? AI_STATUS_META.checking).label}
+                      </span>
+                      <button
+                        onClick={checkAIStatus}
+                        disabled={aiStatus === 'checking'}
+                        className="flex items-center gap-1 text-xs font-medium text-brown-600 dark:text-brown-400 hover:text-brown-700 dark:hover:text-brown-300 disabled:opacity-50 transition-colors"
+                      >
+                        <ArrowsClockwise className={`w-3.5 h-3.5 ${aiStatus === 'checking' ? 'animate-spin' : ''}`} />
+                        Recheck
+                      </button>
+                    </div>
+                  </SettingRow>
+
+                  {aiStatus !== 'connected' && (
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4">
+                      <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-1">Setup Instructions</p>
+                      {electronService.isElectron ? (
+                        <ol className="text-xs text-amber-600 dark:text-amber-500 space-y-1 list-decimal list-inside">
+                          <li>Get a free API key at <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">openrouter.ai/keys</code></li>
+                          <li>Paste it into the "OpenRouter API Key" field above and click Save</li>
+                          <li>Click "Recheck" above</li>
+                        </ol>
+                      ) : (
+                        <ol className="text-xs text-amber-600 dark:text-amber-500 space-y-1 list-decimal list-inside">
+                          <li>Copy <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">.env.example</code> to <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">.env</code> in the backend folder</li>
+                          <li>Add your OpenRouter API key as <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">OPENROUTER_API_KEY</code> in the .env file</li>
+                          <li>Run <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">npm run dev:backend</code> in a terminal</li>
+                          <li>Click "Recheck" above</li>
+                        </ol>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
               {activeSection === 'shortcuts' && (
@@ -253,20 +306,29 @@ export default function SettingsModal() {
 
               {activeSection === 'data' && (
                 <>
-                  <SettingRow label="Local Storage" description="Notes are saved locally on your device">
+                  <SettingRow
+                    label="Storage"
+                    description={electronService.isElectron
+                      ? 'Notes are saved locally on your device (Electron Store, AppData)'
+                      : 'Notes are saved locally in your browser (LocalStorage)'}
+                  >
                     <div className="text-sm text-green-600 dark:text-green-400 font-medium">✓ Active (offline-first)</div>
                   </SettingRow>
-                  <SettingRow label="Cloud Sync" description="Sync notes to MongoDB (requires setup)">
-                    <div className="text-sm text-gray-400">Coming soon</div>
-                  </SettingRow>
-                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4">
-                    <p className="text-sm text-blue-700 dark:text-blue-400 font-medium mb-1">Storage Location</p>
-                    <p className="text-xs text-blue-600 dark:text-blue-500">
-                      {electronService.isElectron
-                        ? 'Notes stored in Electron Store (AppData/electron-store)'
-                        : 'Notes stored in browser LocalStorage'}
-                    </p>
-                  </div>
+
+                  {electronService.isElectron && (
+                    <SettingRow
+                      label="Encryption"
+                      description={encryptionStatus?.osProtected === false
+                        ? 'Note titles and content are encrypted at rest with AES-256-GCM. The encryption key is currently not protected by your OS keychain.'
+                        : 'Note titles and content are encrypted at rest with AES-256-GCM. The encryption key is protected by your operating system (Windows Credential Store / Keychain).'}
+                    >
+                      {encryptionStatus?.osProtected === false ? (
+                        <div className="text-sm text-amber-600 dark:text-amber-400 font-medium">⚠ Key not OS-protected</div>
+                      ) : (
+                        <div className="text-sm text-green-600 dark:text-green-400 font-medium">✓ Enabled (AES-256-GCM)</div>
+                      )}
+                    </SettingRow>
+                  )}
                 </>
               )}
             </div>

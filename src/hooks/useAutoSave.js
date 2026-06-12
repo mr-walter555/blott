@@ -1,22 +1,20 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useNotesStore } from '../store/notesStore'
 import { useUIStore } from '../store/uiStore'
-import { syncShare } from '../services/shareService'
 
-export function useAutoSave(noteId, content, title, shareToken, { onSaving, onSaved, onError } = {}) {
+export function useAutoSave(noteId, content, title, { onSaving, onSaved, onError } = {}) {
   const updateNote = useNotesStore(s => s.updateNote)
   const autoSaveInterval = useUIStore(s => s.autoSaveInterval)
   const timerRef = useRef(null)
   const lastSavedRef = useRef({ content, title })
-  const latestRef = useRef({ noteId, content, title, shareToken })
-  latestRef.current = { noteId, content, title, shareToken }
+  const latestRef = useRef({ noteId, content, title })
+  latestRef.current = { noteId, content, title }
 
-  const persist = useCallback(async (noteId, content, title, shareToken) => {
+  const persist = useCallback(async (noteId, content, title) => {
     onSaving?.()
     try {
       await updateNote(noteId, { content, title })
       lastSavedRef.current = { content, title }
-      if (shareToken) syncShare(shareToken, { title: title || 'Untitled', content })
       onSaved?.()
     } catch (err) {
       console.error('Failed to persist note update:', err)
@@ -25,14 +23,14 @@ export function useAutoSave(noteId, content, title, shareToken, { onSaving, onSa
   }, [updateNote, onSaving, onSaved, onError])
 
   const flush = useCallback(() => {
-    const { noteId, content, title, shareToken } = latestRef.current
+    const { noteId, content, title } = latestRef.current
     if (!noteId) return
     const hasChanged =
       content !== lastSavedRef.current.content ||
       title !== lastSavedRef.current.title
     if (!hasChanged) return
     if (timerRef.current) clearTimeout(timerRef.current)
-    persist(noteId, content, title, shareToken)
+    persist(noteId, content, title)
   }, [persist])
 
   useEffect(() => {
@@ -45,13 +43,13 @@ export function useAutoSave(noteId, content, title, shareToken, { onSaving, onSa
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(() => {
-      persist(noteId, content, title, shareToken)
+      persist(noteId, content, title)
     }, autoSaveInterval)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [noteId, content, title, shareToken, autoSaveInterval, persist])
+  }, [noteId, content, title, autoSaveInterval, persist])
 
   useEffect(() => {
     lastSavedRef.current = { content, title }

@@ -3,20 +3,30 @@ import {
   ArrowSquareOut, Trash,
   ArrowCounterClockwise, ArrowsOutSimple, FilePdf, FileText as FileMd, DotsThree, BookOpen
 } from '@phosphor-icons/react'
+import { AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useNotesStore } from '../../store/notesStore'
 import { useUIStore } from '../../store/uiStore'
 import { formatDate } from '../../utils/helpers'
 import { exportAsPDF, exportAsMarkdown } from '../../utils/exportNote'
 import { GUIDE_NOTE_ID } from '../../utils/guideNote'
+import DeleteConfirmModal from '../Sidebar/DeleteConfirmModal'
 
 export default function NoteHeader({ note, editor }) {
   const trashNote      = useNotesStore(s => s.trashNote)
   const restoreNote    = useNotesStore(s => s.restoreNote)
+  const deleteNote     = useNotesStore(s => s.deleteNote)
   const openAsFloating = useNotesStore(s => s.openAsFloating)
   const toggleFocusMode = useUIStore(s => s.toggleFocusMode)
 
   const [exportOpen, setExportOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const handleDeleteForever = () => {
+    deleteNote(note.id)
+    setConfirmDelete(false)
+    toast.success('Note permanently deleted', { iconTheme: { primary: '#ef4444', secondary: '#fff' } })
+  }
 
   return (
     <div className="flex flex-col border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
@@ -34,15 +44,11 @@ export default function NoteHeader({ note, editor }) {
 
         {/* Right actions */}
         <div className="flex items-center gap-1">
-          {note.trashed ? (
-            <button onClick={() => { restoreNote(note.id); toast.success('Note restored') }} className="btn-icon text-green-500" title="Restore note">
-              <ArrowCounterClockwise className="w-5 h-5" />
-            </button>
-          ) : (
+          {!note.trashed && (
             <>
               {/* Export dropdown */}
               <div className="relative">
-                <button onClick={() => setExportOpen(o => !o)} className="btn-icon" title="More options">
+                <button onClick={() => setExportOpen(o => !o)} className="btn-icon" title="More options" aria-label="More options">
                   <DotsThree className="w-5 h-5 text-black dark:text-white" weight="bold" />
                 </button>
                 {exportOpen && (
@@ -51,7 +57,7 @@ export default function NoteHeader({ note, editor }) {
                     onMouseLeave={() => setExportOpen(false)}
                   >
                     <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
-                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Export</p>
+                      <p className="section-label">Export</p>
                     </div>
                     <div className="py-1">
                       <button
@@ -82,7 +88,7 @@ export default function NoteHeader({ note, editor }) {
                 )}
               </div>
 
-              <button onClick={toggleFocusMode} className="btn-icon" title="Focus mode">
+              <button onClick={toggleFocusMode} className="btn-icon" title="Focus mode" aria-label="Focus mode">
                 <ArrowsOutSimple className="w-5 h-5 text-black dark:text-white" />
               </button>
               {note.id === GUIDE_NOTE_ID ? (
@@ -91,7 +97,7 @@ export default function NoteHeader({ note, editor }) {
                   Guide
                 </span>
               ) : (
-                <button onClick={() => { trashNote(note.id, true); toast('Moved to trash', { icon: '🗑️' }) }} className="btn-icon hover:text-red-500" title="Move to trash">
+                <button onClick={() => { trashNote(note.id, true); toast('Moved to trash', { icon: '🗑️' }) }} className="btn-icon hover:text-red-500" title="Move to trash" aria-label="Move to trash">
                   <Trash className="w-5 h-5" />
                 </button>
               )}
@@ -99,6 +105,42 @@ export default function NoteHeader({ note, editor }) {
           )}
         </div>
       </div>
+
+      {/* Trash banner — note is read-only while trashed */}
+      {note.trashed && (
+        <div className="flex items-center justify-between gap-3 px-8 py-2 bg-gray-50 dark:bg-white/[0.03]">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            This note is in Trash and read-only. It'll be permanently deleted after 30 days.
+          </p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => { restoreNote(note.id); toast.success('Note restored') }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40 transition-colors"
+            >
+              <ArrowCounterClockwise className="w-3.5 h-3.5" />
+              Restore
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors"
+            >
+              <Trash className="w-3.5 h-3.5" />
+              Delete forever
+            </button>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {confirmDelete && (
+          <DeleteConfirmModal
+            key="delete-confirm"
+            note={note}
+            onConfirm={handleDeleteForever}
+            onCancel={() => setConfirmDelete(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
