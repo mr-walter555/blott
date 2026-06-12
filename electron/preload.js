@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getStatus: () => ipcRenderer.invoke('encryption:status'),
   },
 
+  ai: {
+    status: () => ipcRenderer.invoke('ai:status'),
+    processText: (action, text) => ipcRenderer.invoke('ai:processText', action, text),
+    askNotes: (question, notes, history) => ipcRenderer.invoke('ai:askNotes', question, notes, history),
+  },
+
   floating: {
     open: (noteId) => ipcRenderer.invoke('floating:open', noteId),
     close: (noteId) => ipcRenderer.invoke('floating:close', noteId),

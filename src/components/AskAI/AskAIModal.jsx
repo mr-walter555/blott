@@ -254,18 +254,15 @@ export default function AskAIModal() {
     if (!trimmed || connecting) return
     setConnecting(true)
     await window.electronAPI.settings.set({ openRouterApiKey: trimmed })
-    // The backend restarts to pick up the new key — give it a moment before rechecking.
-    setTimeout(async () => {
-      try {
-        const { configured } = await getAIStatus()
-        setAiStatus(configured ? 'connected' : 'unconfigured')
-        if (configured) toast.success('AI connected')
-        else toast.error('Still not connected — check your key and try again')
-      } catch {
-        setAiStatus('error')
-      }
-      setConnecting(false)
-    }, 1500)
+    try {
+      const { configured } = await getAIStatus()
+      setAiStatus(configured ? 'connected' : 'unconfigured')
+      if (configured) toast.success('AI connected')
+      else toast.error('Still not connected — check your key and try again')
+    } catch {
+      setAiStatus('error')
+    }
+    setConnecting(false)
   }
 
   useEffect(() => {

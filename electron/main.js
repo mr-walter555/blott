@@ -6,10 +6,10 @@ const iconPath = path.join(__dirname, '..', 'assets', process.platform === 'win3
 const appIcon = nativeImage.createFromPath(iconPath)
 const Store = require('electron-store')
 const { v4: uuidv4 } = require('uuid')
-const { fork } = require('child_process')
 const contextMenu = require('electron-context-menu')
 const { DEFAULT_WORKSPACES } = require('../shared/constants')
 const { initEncryption, encryptText, decryptText, getEncryptionStatus } = require('./encryption')
+const aiService = require('./aiService')
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -47,7 +47,6 @@ const store = new Store({
 })
 
 let mainWindow = null
-let backendProcess = null
 const floatingWindows = new Map()
 
 function sendUpdateStatus(status, data = {}) {
@@ -199,35 +198,17 @@ function createFloatingWindow(noteId) {
   })
 }
 
-function startBackend() {
-  if (isDev) return
-  try {
-    const env = { ...process.env, ELECTRON_RUN: 'true' }
-    const { openRouterApiKey } = store.get('settings', {})
-    if (openRouterApiKey) env.OPENROUTER_API_KEY = decryptText(openRouterApiKey)
-
-    backendProcess = fork(path.join(__dirname, '../backend/server.js'), [], {
-      env,
-      silent: false,
-    })
-    backendProcess.on('error', err => console.error('Backend error:', err))
-  } catch (err) {
-    console.error('Failed to start backend:', err)
-  }
+// Reads the OpenRouter key from Settings, decrypting it for use with the API client.
+function getOpenRouterKey() {
+  const { openRouterApiKey } = store.get('settings', {})
+  return openRouterApiKey ? decryptText(openRouterApiKey) : null
 }
 
-// Restarts the forked backend so a newly-saved OpenRouter key takes effect
-// without requiring the user to relaunch the whole app.
-function restartBackend() {
-  if (isDev) return
-  if (backendProcess) {
-    const proc = backendProcess
-    backendProcess = null
-    proc.once('exit', startBackend)
-    proc.kill()
-  } else {
-    startBackend()
-  }
+function friendlyAIError(err) {
+  const status = err.status ?? err.response?.status
+  if (status === 429) return 'OpenRouter quota exceeded — check your account at openrouter.ai'
+  if (status === 401 || err.message?.includes('API key')) return 'Invalid OpenRouter API key'
+  return err.message || 'AI request failed'
 }
 
 app.commandLine.appendSwitch('disable-gpu')
@@ -240,7 +221,6 @@ app.whenReady().then(async () => {
   initEncryption()
   // Clear corrupted disk cache on startup to prevent backend_impl errors
   try { await session.defaultSession.clearCache() } catch {}
-  startBackend()
   createMainWindow()
 
   // Silent check on launch so the About settings page can show update
@@ -256,10 +236,6 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
-})
-
-app.on('quit', () => {
-  if (backendProcess) backendProcess.kill()
 })
 
 // ── IPC: Notes ────────────────────────────────────────────────────────────────
@@ -357,8 +333,30 @@ ipcMain.handle('settings:set', (_, data) => {
     updated.openRouterApiKey = encryptText(updated.openRouterApiKey)
   }
   store.set('settings', updated)
-  if ('openRouterApiKey' in data) restartBackend()
   return updated
+})
+
+// ── IPC: AI ───────────────────────────────────────────────────────────────────
+
+ipcMain.handle('ai:status', () => {
+  return { configured: Boolean(getOpenRouterKey()) }
+})
+
+ipcMain.handle('ai:processText', async (_, action, text) => {
+  try {
+    const result = await aiService.processText(getOpenRouterKey(), action, text)
+    return { result }
+  } catch (err) {
+    return { error: friendlyAIError(err) }
+  }
+})
+
+ipcMain.handle('ai:askNotes', async (_, question, notes, history) => {
+  try {
+    return await aiService.askNotes(getOpenRouterKey(), question, notes, history)
+  } catch (err) {
+    return { error: friendlyAIError(err) }
+  }
 })
 
 // ── IPC: Encryption ───────────────────────────────────────────────────────────
