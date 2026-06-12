@@ -18,7 +18,7 @@ const params = new URLSearchParams(window.location.search)
 const isStickyMode = params.get('mode') === 'sticky'
 const stickyNoteId = params.get('noteId')
 
-function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondaryLabel = 'Dismiss' }) {
+function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondaryLabel = 'Dismiss', progress, dismissOnPrimary = true }) {
   return (
     <div className="w-80 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg p-4">
       <div className="flex items-start justify-between gap-2">
@@ -32,20 +32,30 @@ function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondary
         </button>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={() => { onPrimary(); toast.dismiss(t.id) }}
-          className="px-3 py-1.5 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-medium hover:opacity-90 transition-opacity"
-        >
-          {primaryLabel}
-        </button>
-        <button
-          onClick={() => toast.dismiss(t.id)}
-          className="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-        >
-          {secondaryLabel}
-        </button>
-      </div>
+      {progress != null && (
+        <div className="mt-3 h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+          <div
+            className="h-full bg-gray-900 dark:bg-gray-100 rounded-full transition-[width] duration-300"
+            style={{ width: `${Math.round(progress)}%` }}
+          />
+        </div>
+      )}
+      {primaryLabel && (
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={() => { onPrimary(); if (dismissOnPrimary) toast.dismiss(t.id) }}
+            className="px-3 py-1.5 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            {primaryLabel}
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+          >
+            {secondaryLabel}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -73,6 +83,16 @@ export default function App() {
   // this status while it's open.
   useEffect(() => {
     if (!electronService.isElectron) return
+
+    const showDownloadingToast = (percent) => toast.custom(t => (
+      <UpdateToast
+        t={t}
+        title="Downloading update…"
+        description="Smart Notepad will be ready to install when this finishes."
+        progress={percent}
+      />
+    ), { id: 'update-status', duration: Infinity })
+
     return window.electronAPI.updater.onStatus(status => {
       setUpdateStatus(status)
       if (status.status === 'available') {
@@ -82,10 +102,17 @@ export default function App() {
             title={`Update available – v${status.version}`}
             description="A new version of Smart Notepad is ready to download."
             primaryLabel="Download"
-            onPrimary={() => window.electronAPI.updater.download()}
+            dismissOnPrimary={false}
+            onPrimary={() => {
+              setUpdateStatus(s => ({ ...s, status: 'downloading', percent: 0 }))
+              window.electronAPI.updater.download()
+              showDownloadingToast(0)
+            }}
             secondaryLabel="Dismiss"
           />
         ), { id: 'update-status', duration: Infinity })
+      } else if (status.status === 'downloading') {
+        showDownloadingToast(status.percent ?? 0)
       } else if (status.status === 'downloaded') {
         toast.custom(t => (
           <UpdateToast
