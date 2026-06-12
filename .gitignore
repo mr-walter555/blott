@@ -1,6 +1,14 @@
 node_modules/
 dist/
+dist-electron/
 .env
 .env.local
+*.log
+.DS_Store
+Thumbs.db
 
 .vercel
+
+# backend is its own independently version-controlled repo
+# (separate GitHub remote + Vercel deploy) — not tracked from here
+backend/
