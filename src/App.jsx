@@ -60,6 +60,38 @@ function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondary
   )
 }
 
+// Strips basic markdown (bullet/heading markers) so GitHub release notes
+// render as a plain list without pulling in a markdown renderer.
+function parseReleaseNotes(notes) {
+  return notes
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => line.replace(/^[-*]\s+/, '').replace(/^#+\s+/, ''))
+}
+
+function WhatsNewToast({ t, version, notes }) {
+  return (
+    <div className="w-80 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg p-4">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">What's new in v{version}</p>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 -m-1 p-1 rounded-md transition-colors"
+          aria-label="Dismiss"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <ul className="mt-2 space-y-1 list-disc list-inside">
+        {notes.map((line, i) => (
+          <li key={i} className="text-xs text-gray-500 dark:text-gray-400">{line}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export default function App() {
   useTheme()
   useKeyboardShortcuts()
@@ -77,6 +109,20 @@ export default function App() {
     initNotes()
     initWorkspaces()
   }, [initNotes, initWorkspaces])
+
+  // Shows release notes once, on the first launch after an update installs.
+  useEffect(() => {
+    if (!electronService.isElectron) return
+
+    window.electronAPI.app.getWhatsNew().then(result => {
+      if (!result) return
+      const notes = parseReleaseNotes(result.notes)
+      if (notes.length === 0) return
+      toast.custom(t => (
+        <WhatsNewToast t={t} version={result.version} notes={notes} />
+      ), { id: 'whats-new', duration: Infinity })
+    })
+  }, [])
 
   // Registered once for the app's lifetime so a silent update check on launch
   // (before any UI is listening) still reaches the user — Settings only shows

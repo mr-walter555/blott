@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getInfo: () => ipcRenderer.invoke('app:getInfo'),
     openDataFolder: () => ipcRenderer.invoke('app:openDataFolder'),
     setOpenAtLogin: (value) => ipcRenderer.invoke('app:setOpenAtLogin', value),
+    getWhatsNew: () => ipcRenderer.invoke('app:getWhatsNew'),
   },
 
   updater: {

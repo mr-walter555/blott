@@ -55,12 +55,24 @@ function sendUpdateStatus(status, data = {}) {
   }
 }
 
+// electron-updater returns either a markdown string or, when skipping
+// multiple versions, an array of per-version { version, note } entries.
+function formatReleaseNotes(releaseNotes) {
+  if (typeof releaseNotes === 'string') return releaseNotes
+  if (Array.isArray(releaseNotes)) return releaseNotes.map(n => n.note).filter(Boolean).join('\n')
+  return null
+}
+
 autoUpdater.on('checking-for-update', () => sendUpdateStatus('checking'))
 autoUpdater.on('update-available', (info) => sendUpdateStatus('available', { version: info.version }))
 autoUpdater.on('update-not-available', () => sendUpdateStatus('not-available'))
 autoUpdater.on('error', (err) => sendUpdateStatus('error', { message: err?.message || String(err) }))
 autoUpdater.on('download-progress', (progress) => sendUpdateStatus('downloading', { percent: progress.percent }))
-autoUpdater.on('update-downloaded', (info) => sendUpdateStatus('downloaded', { version: info.version }))
+autoUpdater.on('update-downloaded', (info) => {
+  const notes = formatReleaseNotes(info.releaseNotes)
+  if (notes) store.set('pendingWhatsNew', { version: info.version, notes })
+  sendUpdateStatus('downloaded', { version: info.version })
+})
 
 // Title and content are the sensitive parts of a note; everything else
 // (tags, color, flags, timestamps) stays plaintext for cheap filtering/sorting.
@@ -410,6 +422,22 @@ ipcMain.handle('app:openDataFolder', () => {
 ipcMain.handle('app:setOpenAtLogin', (_, openAtLogin) => {
   app.setLoginItemSettings({ openAtLogin })
   return app.getLoginItemSettings().openAtLogin
+})
+
+// Returns release notes once, the first time a new version launches after
+// updating. Returns null on every other launch.
+ipcMain.handle('app:getWhatsNew', () => {
+  const currentVersion = app.getVersion()
+  if (store.get('lastSeenVersion') === currentVersion) return null
+
+  const pending = store.get('pendingWhatsNew')
+  store.set('lastSeenVersion', currentVersion)
+  store.delete('pendingWhatsNew')
+
+  if (pending?.version === currentVersion && pending.notes) {
+    return { version: currentVersion, notes: pending.notes }
+  }
+  return null
 })
 
 // ── IPC: Auto-updates ────────────────────────────────────────────────────────
