@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'react-hot-toast'
 import { X } from '@phosphor-icons/react'
@@ -6,6 +6,7 @@ import MainLayout from './pages/MainLayout'
 import StickyNote from './pages/StickyNote'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import SettingsModal from './components/Settings/SettingsModal'
+import WhatsNewModal from './components/common/WhatsNewModal'
 import AskAIModal from './components/AskAI/AskAIModal'
 import { useNotesStore } from './store/notesStore'
 import { useWorkspaceStore } from './store/workspaceStore'
@@ -60,38 +61,6 @@ function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondary
   )
 }
 
-// Strips basic markdown (bullet/heading markers) so GitHub release notes
-// render as a plain list without pulling in a markdown renderer.
-function parseReleaseNotes(notes) {
-  return notes
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => line.replace(/^[-*]\s+/, '').replace(/^#+\s+/, ''))
-}
-
-function WhatsNewToast({ t, version, notes }) {
-  return (
-    <div className="w-80 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg p-4">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">What's new in v{version}</p>
-        <button
-          onClick={() => toast.dismiss(t.id)}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 -m-1 p-1 rounded-md transition-colors"
-          aria-label="Dismiss"
-        >
-          <X size={14} />
-        </button>
-      </div>
-      <ul className="mt-2 space-y-1 list-disc list-inside">
-        {notes.map((line, i) => (
-          <li key={i} className="text-xs text-gray-500 dark:text-gray-400">{line}</li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 export default function App() {
   useTheme()
   useKeyboardShortcuts()
@@ -105,6 +74,8 @@ export default function App() {
   const setUpdateStatus = useUIStore(s => s.setUpdateStatus)
   const openSettings = useUIStore(s => s.openSettings)
 
+  const [whatsNew, setWhatsNew] = useState(null)
+
   useEffect(() => {
     initNotes()
     initWorkspaces()
@@ -115,12 +86,8 @@ export default function App() {
     if (!electronService.isElectron) return
 
     window.electronAPI.app.getWhatsNew().then(result => {
-      if (!result) return
-      const notes = parseReleaseNotes(result.notes)
-      if (notes.length === 0) return
-      toast.custom(t => (
-        <WhatsNewToast t={t} version={result.version} notes={notes} />
-      ), { id: 'whats-new', duration: Infinity })
+      if (!result?.notes?.trim()) return
+      setWhatsNew(result)
     })
   }, [])
 
@@ -186,6 +153,14 @@ export default function App() {
       <AnimatePresence>
         {commandPaletteOpen && <CommandPalette key="cmd-palette" />}
         {settingsOpen && <SettingsModal key="settings" />}
+        {whatsNew && (
+          <WhatsNewModal
+            key="whats-new"
+            version={whatsNew.version}
+            notes={whatsNew.notes}
+            onClose={() => setWhatsNew(null)}
+          />
+        )}
       </AnimatePresence>
       <Toaster
         position={askAIOpen && askAILayout === 'floating' ? 'top-right' : 'bottom-right'}
