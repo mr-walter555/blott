@@ -53,11 +53,20 @@ async function processText(apiKey, action, text) {
   return response.choices[0]?.message?.content?.trim() || ''
 }
 
+// Notes only carry an absolute `updatedAt` timestamp; the model has no
+// clock of its own, so date-scoped questions ("this week", "yesterday")
+// are unanswerable unless both the note dates and today's date are given.
+function formatNoteDate(updatedAt) {
+  return updatedAt ? updatedAt.slice(0, 10) : 'unknown date'
+}
+
 async function askNotes(apiKey, question, notes = [], history = []) {
   const openai = getClient(apiKey)
 
+  const today = new Date().toISOString().slice(0, 10)
+
   const context = notes.length
-    ? notes.map((n, i) => `[${i + 1}] ${n.title}\n${n.excerpt}`).join('\n\n')
+    ? notes.map((n, i) => `[${i + 1}] ${n.title} (last updated ${formatNoteDate(n.updatedAt)})\n${n.excerpt}`).join('\n\n')
     : '(No notes were found that relate to this question.)'
 
   // History entries are prior turns of this conversation, included so
@@ -77,7 +86,7 @@ async function askNotes(apiKey, question, notes = [], history = []) {
     messages: [
       {
         role: 'system',
-        content: 'You are a helpful assistant that answers questions using only the numbered notes provided as sources. Cite sources inline using [N], where N matches the source number. If the notes do not contain the answer, say so honestly instead of making things up. Use the prior conversation for context on follow-up questions, but base factual claims only on the current sources.',
+        content: `You are a helpful assistant that answers questions using only the numbered notes provided as sources. Today's date is ${today}. Each source is labeled with the date it was last updated — use these dates to answer date-scoped questions (e.g. "this week", "yesterday", "last month"). Cite sources inline using [N], where N matches the source number. Within source text, "[ ]" marks an unfinished checklist item and "[x]" marks a completed one — these are unrelated to the [N] citation format. If the notes do not contain the answer, say so honestly instead of making things up. Use the prior conversation for context on follow-up questions, but base factual claims only on the current sources.`,
       },
       ...historyMessages,
       {

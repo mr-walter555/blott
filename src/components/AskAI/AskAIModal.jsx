@@ -151,16 +151,42 @@ function AnswerText({ text, sources, onOpenNote }) {
         // Split into blocks separated by blank lines
         const blocks = seg.text.split(/\n{2,}/).filter(b => b.trim())
 
-        return blocks.map((block, bi) => {
-        const lines = block.split('\n').filter(l => l.trim())
-        const isBullet = lines.every(l => /^[\*\-]\s/.test(l.trim()))
-        const isNumbered = lines.every(l => /^\d+\.\s/.test(l.trim()))
+        const classified = blocks.map(block => {
+          const lines = block.split('\n').filter(l => l.trim())
+          const isBullet = lines.length > 0 && lines.every(l => /^[\*\-]\s/.test(l.trim()))
+          const isNumbered = lines.length > 0 && lines.every(l => /^\d+\.\s/.test(l.trim()))
+          if (isBullet) return { type: 'ul', lines }
+          if (isNumbered) return { type: 'ol', lines }
+          return { type: 'p', block }
+        })
 
-        if ((isBullet || isNumbered) && lines.length > 0) {
-          const Tag = isNumbered ? 'ol' : 'ul'
+        // The AI's blank-line spacing between list items is inconsistent —
+        // merge consecutive blocks of the same list type so one conceptual
+        // list isn't fragmented into several <ol>/<ul> elements, each of
+        // which would restart its numbering/bullets from scratch.
+        const merged = []
+        for (const item of classified) {
+          const prev = merged[merged.length - 1]
+          if (prev && prev.type === item.type && item.type !== 'p') {
+            prev.lines.push(...item.lines)
+          } else {
+            merged.push(item.type === 'p' ? item : { ...item, lines: [...item.lines] })
+          }
+        }
+
+        return merged.map((item, bi) => {
+          if (item.type === 'p') {
+            return (
+              <p key={`${si}-${bi}`} className={`${baseText} whitespace-pre-wrap`}>
+                <InlineText text={item.block} sources={sources} onOpenNote={onOpenNote} />
+              </p>
+            )
+          }
+
+          const Tag = item.type === 'ol' ? 'ol' : 'ul'
           return (
-            <Tag key={`${si}-${bi}`} className={`${baseText} ${isNumbered ? 'list-decimal pl-5 space-y-0.5' : 'list-disc pl-5 space-y-0.5'}`}>
-              {lines.map((line, li) => {
+            <Tag key={`${si}-${bi}`} className={`${baseText} ${item.type === 'ol' ? 'list-decimal pl-5 space-y-0.5' : 'list-disc pl-5 space-y-0.5'}`}>
+              {item.lines.map((line, li) => {
                 const content = line.trim().replace(/^[\*\-]\s+/, '').replace(/^\d+\.\s+/, '')
                 return (
                   <li key={li}>
@@ -170,14 +196,6 @@ function AnswerText({ text, sources, onOpenNote }) {
               })}
             </Tag>
           )
-        }
-
-        // Mixed block — render line by line, wrapping bullet lines in <li> if needed
-        return (
-          <p key={`${si}-${bi}`} className={`${baseText} whitespace-pre-wrap`}>
-            <InlineText text={block} sources={sources} onOpenNote={onOpenNote} />
-          </p>
-        )
         })
       })}
     </div>

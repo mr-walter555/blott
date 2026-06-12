@@ -6,6 +6,21 @@ export function stripHtml(html) {
   return text.replace(/\s+/g, ' ').trim()
 }
 
+// Like stripHtml, but converts TipTap task-list items to "[ ] "/"[x] " markers
+// first — textContent alone discards the `data-checked` attribute, so a
+// checklist would otherwise become indistinguishable plain text with no way
+// to tell what's done vs. not (e.g. for the AI to answer "what's unfinished?").
+export function stripHtmlWithTasks(html) {
+  if (!html) return ''
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  doc.querySelectorAll('li[data-type="taskItem"]').forEach(li => {
+    const checked = li.getAttribute('data-checked') === 'true'
+    li.prepend(doc.createTextNode(`\n${checked ? '[x]' : '[ ]'} `))
+  })
+  const text = doc.body.textContent || ''
+  return text.replace(/\s+/g, ' ').trim()
+}
+
 export function truncate(str, len = 120) {
   if (!str || str.length <= len) return str
   return str.slice(0, len).trimEnd() + '…'

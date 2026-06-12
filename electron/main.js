@@ -329,8 +329,11 @@ ipcMain.handle('settings:get', () => {
 ipcMain.handle('settings:set', (_, data) => {
   const current = store.get('settings', {})
   const updated = { ...current, ...data }
-  if (typeof updated.openRouterApiKey === 'string') {
-    updated.openRouterApiKey = encryptText(updated.openRouterApiKey)
+  // Only re-encrypt when this call actually provides a new key — `current.openRouterApiKey`
+  // is already ciphertext, so encrypting it again on unrelated settings updates would
+  // double-encrypt it and corrupt the stored key.
+  if (typeof data.openRouterApiKey === 'string') {
+    updated.openRouterApiKey = encryptText(data.openRouterApiKey)
   }
   store.set('settings', updated)
   return updated
