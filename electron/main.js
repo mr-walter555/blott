@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session } = require('electron')
+const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session, Notification } = require('electron')
 const path = require('path')
 const { autoUpdater } = require('electron-updater')
 
@@ -57,6 +57,18 @@ function sendUpdateStatus(status, data = {}) {
   }
 }
 
+function showUpdateNotification(title, body) {
+  if (!Notification.isSupported()) return
+  const notification = new Notification({ title, body, icon: appIcon })
+  notification.on('click', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  })
+  notification.show()
+}
+
 // electron-updater returns either a markdown string or, when skipping
 // multiple versions, an array of per-version { version, note } entries.
 function formatReleaseNotes(releaseNotes) {
@@ -66,7 +78,10 @@ function formatReleaseNotes(releaseNotes) {
 }
 
 autoUpdater.on('checking-for-update', () => sendUpdateStatus('checking'))
-autoUpdater.on('update-available', (info) => sendUpdateStatus('available', { version: info.version }))
+autoUpdater.on('update-available', (info) => {
+  sendUpdateStatus('available', { version: info.version })
+  showUpdateNotification('Update available', `Smart Notepad v${info.version} is ready to download.`)
+})
 autoUpdater.on('update-not-available', () => sendUpdateStatus('not-available'))
 autoUpdater.on('error', (err) => sendUpdateStatus('error', { message: err?.message || String(err) }))
 autoUpdater.on('download-progress', (progress) => sendUpdateStatus('downloading', { percent: progress.percent }))
@@ -74,6 +89,7 @@ autoUpdater.on('update-downloaded', (info) => {
   const notes = formatReleaseNotes(info.releaseNotes)
   if (notes) store.set('pendingWhatsNew', { version: info.version, notes })
   sendUpdateStatus('downloaded', { version: info.version })
+  showUpdateNotification('Update ready to install', `Smart Notepad v${info.version} will install the next time you restart.`)
 })
 
 // Title and content are the sensitive parts of a note; everything else
