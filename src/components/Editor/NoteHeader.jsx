@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  ArrowSquareOut, Trash,
+  ArrowSquareOut, Trash, Archive,
   ArrowCounterClockwise, ArrowsOutSimple, FilePdf, FileText as FileMd, DotsThree, BookOpen
 } from '@phosphor-icons/react'
 import { AnimatePresence } from 'framer-motion'
@@ -16,6 +16,7 @@ export default function NoteHeader({ note, editor }) {
   const trashNote      = useNotesStore(s => s.trashNote)
   const restoreNote    = useNotesStore(s => s.restoreNote)
   const deleteNote     = useNotesStore(s => s.deleteNote)
+  const archiveNote    = useNotesStore(s => s.archiveNote)
   const openAsFloating = useNotesStore(s => s.openAsFloating)
   const toggleFocusMode = useUIStore(s => s.toggleFocusMode)
 
@@ -90,6 +91,17 @@ export default function NoteHeader({ note, editor }) {
 
               <button onClick={toggleFocusMode} className="btn-icon" title="Focus mode" aria-label="Focus mode">
                 <ArrowsOutSimple className="w-5 h-5 text-black dark:text-white" />
+              </button>
+              <button
+                onClick={() => {
+                  archiveNote(note.id, !note.archived)
+                  toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-gray-500" /> })
+                }}
+                className="btn-icon"
+                title={note.archived ? 'Unarchive' : 'Archive'}
+                aria-label={note.archived ? 'Unarchive' : 'Archive'}
+              >
+                <Archive className={`w-5 h-5 ${note.archived ? 'text-brown-500' : 'text-black dark:text-white'}`} weight={note.archived ? 'fill' : 'regular'} />
               </button>
               {note.id === GUIDE_NOTE_ID ? (
                 <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 select-none" title="This guide cannot be deleted">

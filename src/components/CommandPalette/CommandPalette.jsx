@@ -35,7 +35,7 @@ export default function CommandPalette() {
   const dialogRef = useFocusTrap()
 
   const closeCommandPalette = useUIStore(s => s.closeCommandPalette)
-  const setActiveView = useUIStore(s => s.setActiveView)
+  const openNotesList = useUIStore(s => s.openNotesList)
   const openSettings = useUIStore(s => s.openSettings)
   const openAskAI = useUIStore(s => s.openAskAI)
   const setTheme = useUIStore(s => s.setTheme)
@@ -46,17 +46,17 @@ export default function CommandPalette() {
   const STATIC_COMMANDS = useMemo(() => STATIC_COMMAND_DEFS.map(def => ({
     ...def,
     action: def.id === 'new-note'       ? async () => { const n = await createNote(); setSelectedNote(n.id) }
-          : def.id === 'view-all'       ? () => setActiveView('all')
-          : def.id === 'view-favorites' ? () => setActiveView('favorites')
-          : def.id === 'view-pinned'    ? () => setActiveView('pinned')
-          : def.id === 'view-archived'  ? () => setActiveView('archived')
-          : def.id === 'view-trash'     ? () => setActiveView('trash')
+          : def.id === 'view-all'       ? () => openNotesList('all')
+          : def.id === 'view-favorites' ? () => openNotesList('favorites')
+          : def.id === 'view-pinned'    ? () => openNotesList('pinned')
+          : def.id === 'view-archived'  ? () => openNotesList('archived')
+          : def.id === 'view-trash'     ? () => openNotesList('trash')
           : def.id === 'ask-ai'         ? () => openAskAI()
           : def.id === 'settings'       ? () => openSettings()
           : def.id === 'theme-light'    ? () => setTheme('light')
           : def.id === 'theme-dark'     ? () => setTheme('dark')
           : /* theme-system */            () => setTheme('system'),
-  })), [createNote, setSelectedNote, setActiveView, openSettings, openAskAI, setTheme])
+  })), [createNote, setSelectedNote, openNotesList, openSettings, openAskAI, setTheme])
 
   useEffect(() => {
     inputRef.current?.focus()

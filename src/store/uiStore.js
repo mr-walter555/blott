@@ -23,8 +23,8 @@ export const useUIStore = create((set, get) => ({
   settingsOpen: false,
   askAIOpen: false,
   askAILayout: loadAILayout(),
-  activeView: 'all',
   activeWorkspaceId: null,
+  notesListView: null,
   searchQuery: '',
   fontSize: 'medium',
   autoSaveInterval: 2000,
@@ -46,8 +46,9 @@ export const useUIStore = create((set, get) => ({
     set({ askAILayout: id })
     try { localStorage.setItem(AI_LAYOUT_KEY, id) } catch {}
   },
-  setActiveView: (view) => set({ activeView: view, activeWorkspaceId: null }),
-  setActiveWorkspace: (id) => set({ activeWorkspaceId: id, activeView: 'workspace' }),
+  setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+  openNotesList: (view) => set({ notesListView: view, commandPaletteOpen: false }),
+  closeNotesList: () => set({ notesListView: null }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setFontSize: (fontSize) => set({ fontSize }),
   setFontFamily: (fontFamily) => set({ fontFamily }),

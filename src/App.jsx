@@ -7,6 +7,8 @@ import StickyNote from './pages/StickyNote'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import SettingsModal from './components/Settings/SettingsModal'
 import WhatsNewModal from './components/common/WhatsNewModal'
+import NotesListModal from './components/common/NotesListModal'
+import TrashModal from './components/Sidebar/TrashModal'
 import AskAIModal from './components/AskAI/AskAIModal'
 import { useNotesStore } from './store/notesStore'
 import { useWorkspaceStore } from './store/workspaceStore'
@@ -71,6 +73,8 @@ export default function App() {
   const settingsOpen = useUIStore(s => s.settingsOpen)
   const askAIOpen = useUIStore(s => s.askAIOpen)
   const askAILayout = useUIStore(s => s.askAILayout)
+  const notesListView = useUIStore(s => s.notesListView)
+  const closeNotesList = useUIStore(s => s.closeNotesList)
   const setUpdateStatus = useUIStore(s => s.setUpdateStatus)
   const openSettings = useUIStore(s => s.openSettings)
 
@@ -153,6 +157,12 @@ export default function App() {
       <AnimatePresence>
         {commandPaletteOpen && <CommandPalette key="cmd-palette" />}
         {settingsOpen && <SettingsModal key="settings" />}
+        {notesListView === 'trash' && (
+          <TrashModal key="trash-modal" anchorY={96} onClose={closeNotesList} />
+        )}
+        {notesListView && notesListView !== 'trash' && (
+          <NotesListModal key="notes-list" view={notesListView} onClose={closeNotesList} />
+        )}
         {whatsNew && (
           <WhatsNewModal
             key="whats-new"

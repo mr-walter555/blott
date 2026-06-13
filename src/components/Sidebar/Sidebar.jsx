@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import {
   GearSix, Plus, SidebarSimple, MagnifyingGlass,
   CaretDown, CaretRight, FileText, Star, PushPin as PushPinRaw, ListChecks,
-  DotsThree, Trash, PencilSimple, BookOpen
+  DotsThree, Trash, PencilSimple, BookOpen, Archive
 } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -54,15 +54,13 @@ export default function Sidebar() {
   const openSettings       = useUIStore(s => s.openSettings)
   const openCommandPalette = useUIStore(s => s.openCommandPalette)
   const activeWorkspaceId  = useUIStore(s => s.activeWorkspaceId)
-  const setActiveView      = useUIStore(s => s.setActiveView)
-  const activeView         = useUIStore(s => s.activeView)
 
   const allNotes        = useNotesStore(s => s.notes)
   const createNote      = useNotesStore(s => s.createNote)
   const setSelectedNote = useNotesStore(s => s.setSelectedNote)
   const selectedNoteId  = useNotesStore(s => s.selectedNoteId)
-  const getActiveNotes  = useNotesStore(s => s.getActiveNotes)
   const updateNote      = useNotesStore(s => s.updateNote)
+  const archiveNote     = useNotesStore(s => s.archiveNote)
   const trashNote       = useNotesStore(s => s.trashNote)
 
   const [workspacesExpanded, setWorkspacesExpanded] = useState(true)
@@ -309,6 +307,14 @@ export default function Sidebar() {
               >
                 <PencilSimple className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 Rename
+              </button>
+
+              <button
+                onClick={() => { archiveNote(note.id, !note.archived); setMenu(null); toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-gray-500" /> }) }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+              >
+                <Archive className={`w-4 h-4 ${note.archived ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`} weight={note.archived ? 'fill' : 'regular'} />
+                {note.archived ? 'Unarchive' : 'Archive'}
               </button>
 
               {note.id !== GUIDE_NOTE_ID && (
