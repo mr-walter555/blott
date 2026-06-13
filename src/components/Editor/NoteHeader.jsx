@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  ArrowSquareOut, Trash, Archive,
+  Trash, Archive,
   ArrowCounterClockwise, ArrowsOutSimple, FilePdf, FileText as FileMd, DotsThree, BookOpen
 } from '@phosphor-icons/react'
 import { AnimatePresence } from 'framer-motion'
@@ -17,7 +17,6 @@ export default function NoteHeader({ note, editor }) {
   const restoreNote    = useNotesStore(s => s.restoreNote)
   const deleteNote     = useNotesStore(s => s.deleteNote)
   const archiveNote    = useNotesStore(s => s.archiveNote)
-  const openAsFloating = useNotesStore(s => s.openAsFloating)
   const toggleFocusMode = useUIStore(s => s.toggleFocusMode)
 
   const [exportOpen, setExportOpen] = useState(false)
@@ -74,15 +73,6 @@ export default function NoteHeader({ note, editor }) {
                       >
                         <FileMd className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="whitespace-nowrap">Export as Markdown</span>
-                      </button>
-                    </div>
-                    <div className="border-t border-gray-100 dark:border-gray-700 py-1">
-                      <button
-                        onClick={() => { openAsFloating(note.id); setExportOpen(false) }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
-                      >
-                        <ArrowSquareOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="whitespace-nowrap">Open as sticky note</span>
                       </button>
                     </div>
                   </div>

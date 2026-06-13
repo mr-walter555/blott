@@ -8,7 +8,8 @@ const GUIDE_CONTENT = `<p>👋 Welcome to Smart Notepad! Everything you write is
   <li data-type="taskItem" data-checked="false"><p>Press <code>Ctrl+N</code> to create a new note</p></li>
   <li data-type="taskItem" data-checked="false"><p>Highlight any text to <strong>style</strong> <em>your</em> writing, add a <mark>highlight</mark>, or <u>underline</u></p></li>
   <li data-type="taskItem" data-checked="false"><p>Right-click selected text for AI tools — improve, expand, summarise, or translate</p></li>
-  <li data-type="taskItem" data-checked="false"><p>Press <code>Ctrl+Shift+A</code> to open <mark>Ask AI</mark> and ask questions about everything you've written</p></li>
+  <li data-type="taskItem" data-checked="false"><p>Press <code>Ctrl+Q</code> to open <mark>Ask AI</mark> and ask questions about everything you've written</p></li>
+  <li data-type="taskItem" data-checked="false"><p>Press <code>Alt+Space</code> from anywhere to open <mark>Quick Capture</mark> and jot down a note instantly — even outside the app</p></li>
   <li data-type="taskItem" data-checked="false"><p>Create a <strong>Workspace</strong> from the sidebar to group related notes together</p></li>
 </ul>
 <hr>

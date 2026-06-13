@@ -139,6 +139,12 @@ export const useNotesStore = create((set, get) => ({
 
   setSelectedNote: (id) => set({ selectedNoteId: id }),
 
+  // Merges a note created outside this window (e.g. the global Quick Capture
+  // popup) into the store — it's already persisted by the main process.
+  addNoteFromExternal: (note) => {
+    set(s => ({ notes: { ...s.notes, [note.id]: note } }))
+  },
+
   // Appends HTML to a note's content and persists it. If that note's editor
   // is currently mounted, it also picks up `pendingNoteAppend` to insert the
   // content live (see NoteEditor) — both paths converge on the same final
@@ -159,12 +165,6 @@ export const useNotesStore = create((set, get) => ({
     get().updateNote(id, { trashed: value, archived: false })
   },
   restoreNote: (id) => get().updateNote(id, { trashed: false, archived: false }),
-
-  openAsFloating: (id) => {
-    if (electronService.isElectron) {
-      window.electronAPI.floating.open(id)
-    }
-  },
 
   getActiveNotes: (view, workspaceId, searchQuery) => {
     const all = Object.values(get().notes)

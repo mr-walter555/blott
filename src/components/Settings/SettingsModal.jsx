@@ -35,10 +35,11 @@ const UPDATE_STATUS_META = {
 }
 
 const SHORTCUTS = [
+  { keys: 'Alt+Space', action: 'Quick capture (works anywhere)' },
   { keys: 'Ctrl+N', action: 'New note' },
   { keys: 'Ctrl+S', action: 'Save note' },
   { keys: 'Ctrl+F', action: 'Search notes' },
-  { keys: 'Ctrl+Shift+A', action: 'Ask your notes' },
+  { keys: 'Ctrl+Q', action: 'Ask your notes' },
   { keys: 'Ctrl+Shift+P', action: 'Command palette' },
   { keys: 'Ctrl+,', action: 'Open settings' },
   { keys: 'Ctrl+B', action: 'Bold' },

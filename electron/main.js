@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session } = require('electron')
+const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session, globalShortcut } = require('electron')
 const path = require('path')
 const { autoUpdater } = require('electron-updater')
 
@@ -43,13 +43,12 @@ const store = new Store({
       autoSaveInterval: 2000,
       fontFamily: 'Google Sans',
       startMinimized: false,
-      floatingOpacity: 95,
     },
   },
 })
 
 let mainWindow = null
-const floatingWindows = new Map()
+let quickCaptureWindow = null
 
 function sendUpdateStatus(status, data = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -57,22 +56,44 @@ function sendUpdateStatus(status, data = {}) {
   }
 }
 
-// electron-updater returns either a markdown string or, when skipping
-// multiple versions, an array of per-version { version, note } entries.
-function formatReleaseNotes(releaseNotes) {
-  if (typeof releaseNotes === 'string') return releaseNotes
-  if (Array.isArray(releaseNotes)) return releaseNotes.map(n => n.note).filter(Boolean).join('\n')
-  return null
+// Tracks where we are in the update lifecycle so the periodic background
+// check (and the renderer's "Download" button) can't re-trigger a check or
+// a fresh 70MB download while one is already running or already finished —
+// otherwise an update left downloaded-but-not-installed gets re-downloaded
+// on every hourly recheck.
+let updateState = 'idle' // idle | checking | available | downloading | downloaded
+
+function safeCheckForUpdates() {
+  if (updateState === 'checking' || updateState === 'downloading' || updateState === 'downloaded') return
+  autoUpdater.checkForUpdates().catch(() => {})
 }
 
-autoUpdater.on('checking-for-update', () => sendUpdateStatus('checking'))
-autoUpdater.on('update-available', (info) => sendUpdateStatus('available', { version: info.version }))
-autoUpdater.on('update-not-available', () => sendUpdateStatus('not-available'))
-autoUpdater.on('error', (err) => sendUpdateStatus('error', { message: err?.message || String(err) }))
-autoUpdater.on('download-progress', (progress) => sendUpdateStatus('downloading', { percent: progress.percent }))
+autoUpdater.on('checking-for-update', () => {
+  updateState = 'checking'
+  sendUpdateStatus('checking')
+})
+autoUpdater.on('update-available', (info) => {
+  // Already downloaded and waiting for the user to restart — don't
+  // re-prompt "Update available" and overwrite that toast.
+  if (updateState === 'downloaded') return
+  updateState = 'available'
+  sendUpdateStatus('available', { version: info.version })
+})
+autoUpdater.on('update-not-available', () => {
+  updateState = 'idle'
+  sendUpdateStatus('not-available')
+})
+autoUpdater.on('error', (err) => {
+  if (updateState !== 'downloaded') updateState = 'idle'
+  sendUpdateStatus('error', { message: err?.message || String(err) })
+})
+autoUpdater.on('download-progress', (progress) => {
+  updateState = 'downloading'
+  sendUpdateStatus('downloading', { percent: progress.percent })
+})
 autoUpdater.on('update-downloaded', (info) => {
-  const notes = formatReleaseNotes(info.releaseNotes)
-  if (notes) store.set('pendingWhatsNew', { version: info.version, notes })
+  updateState = 'downloaded'
+  store.set('pendingWhatsNew', { version: info.version })
   sendUpdateStatus('downloaded', { version: info.version })
 })
 
@@ -161,55 +182,94 @@ function createMainWindow() {
   nativeTheme.on('updated', () => {
     const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
     if (mainWindow) mainWindow.webContents.send('theme:changed', theme)
-    floatingWindows.forEach(win => {
-      if (!win.isDestroyed()) win.webContents.send('theme:changed', theme)
-    })
   })
 
   Menu.setApplicationMenu(null)
 }
 
-function createFloatingWindow(noteId) {
-  if (floatingWindows.has(noteId)) {
-    const existing = floatingWindows.get(noteId)
-    if (!existing.isDestroyed()) {
-      existing.focus()
-      return
-    }
-  }
+const QUICK_CAPTURE_WIDTH = 480
+const QUICK_CAPTURE_HEIGHT = 180
+const QUICK_CAPTURE_MAX_HEIGHT = 480
 
-  const floatWin = new BrowserWindow({
-    width: 320,
-    height: 260,
-    minWidth: 220,
-    minHeight: 160,
-    alwaysOnTop: true,
+function createNoteRecord(overrides = {}) {
+  const now = new Date().toISOString()
+  return {
+    id: uuidv4(),
+    title: '',
+    content: '',
+    tags: [],
+    color: 'default',
+    pinned: false,
+    favorite: false,
+    archived: false,
+    trashed: false,
+    workspaceId: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  }
+}
+
+function getQuickCaptureWindow() {
+  if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) return quickCaptureWindow
+
+  quickCaptureWindow = new BrowserWindow({
+    width: QUICK_CAPTURE_WIDTH,
+    height: QUICK_CAPTURE_HEIGHT,
     frame: false,
     transparent: true,
-    resizable: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    hasShadow: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
     },
-    skipTaskbar: false,
-    hasShadow: true,
   })
 
   if (isDev) {
-    floatWin.loadURL(`http://localhost:5173/?mode=sticky&noteId=${noteId}`)
+    quickCaptureWindow.loadURL('http://localhost:5173/?mode=quickcapture')
   } else {
-    floatWin.loadFile(path.join(__dirname, '../dist/index.html'), {
-      query: { mode: 'sticky', noteId },
+    quickCaptureWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
+      query: { mode: 'quickcapture' },
     })
   }
 
-  floatingWindows.set(noteId, floatWin)
-
-  floatWin.on('closed', () => {
-    floatingWindows.delete(noteId)
+  quickCaptureWindow.on('closed', () => {
+    quickCaptureWindow = null
   })
+
+  return quickCaptureWindow
+}
+
+// Alt+Space toggles the popup: show it centered near the cursor's display,
+// or ask the renderer to save/dismiss its draft if it's already open.
+function toggleQuickCapture() {
+  const win = getQuickCaptureWindow()
+
+  if (win.isVisible()) {
+    win.webContents.send('quickCapture:dismiss')
+    return
+  }
+
+  // `screen` is exposed via a lazy getter that only resolves once the app is
+  // ready, so it must be read here rather than destructured at module load.
+  const { screen } = require('electron')
+  const { x, y, width } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+  win.setBounds({
+    x: Math.round(x + (width - QUICK_CAPTURE_WIDTH) / 2),
+    y: Math.round(y + 120),
+    width: QUICK_CAPTURE_WIDTH,
+    height: QUICK_CAPTURE_HEIGHT,
+  })
+
+  win.show()
+  win.focus()
+  win.webContents.send('quickCapture:shown')
 }
 
 // Reads the OpenRouter key from Settings, decrypting it for use with the API client.
@@ -237,11 +297,17 @@ app.whenReady().then(async () => {
   try { await session.defaultSession.clearCache() } catch {}
   createMainWindow()
 
+  // Global Quick Capture: works system-wide while the app is running,
+  // even if the main window isn't focused or visible.
+  if (!globalShortcut.register('Alt+Space', toggleQuickCapture)) {
+    console.warn('Quick Capture: failed to register Alt+Space global shortcut')
+  }
+
   // Silent check on launch, then periodically while the app stays open,
   // so updates are picked up without the user clicking "Check for Updates".
   if (app.isPackaged) {
-    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 3000)
-    setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), UPDATE_CHECK_INTERVAL_MS)
+    setTimeout(safeCheckForUpdates, 3000)
+    setInterval(safeCheckForUpdates, UPDATE_CHECK_INTERVAL_MS)
   }
 
   app.on('activate', () => {
@@ -253,6 +319,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+})
+
 // ── IPC: Notes ────────────────────────────────────────────────────────────────
 
 ipcMain.handle('notes:getAll', () => {
@@ -260,22 +330,7 @@ ipcMain.handle('notes:getAll', () => {
 })
 
 ipcMain.handle('notes:create', (_, data) => {
-  const now = new Date().toISOString()
-  const note = {
-    id: uuidv4(),
-    title: '',
-    content: '',
-    tags: [],
-    color: 'default',
-    pinned: false,
-    favorite: false,
-    archived: false,
-    trashed: false,
-    workspaceId: null,
-    createdAt: now,
-    updatedAt: now,
-    ...data,
-  }
+  const note = createNoteRecord(data)
   store.set(`notes.${note.id}`, encryptNote(note))
   return note
 })
@@ -286,11 +341,6 @@ ipcMain.handle('notes:update', (_, id, updates) => {
   const existing = decryptNote(notes[id])
   const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() }
   store.set(`notes.${id}`, encryptNote(updated))
-  floatingWindows.forEach((win, noteId) => {
-    if (noteId === id && !win.isDestroyed()) {
-      win.webContents.send('note:updated', updated)
-    }
-  })
   return updated
 })
 
@@ -383,17 +433,42 @@ ipcMain.handle('encryption:status', () => {
   return getEncryptionStatus()
 })
 
-// ── IPC: Floating Notes ───────────────────────────────────────────────────────
+// ── IPC: Quick Capture ────────────────────────────────────────────────────────
 
-ipcMain.handle('floating:open', (_, noteId) => {
-  createFloatingWindow(noteId)
+ipcMain.handle('quickCapture:save', (_, content) => {
+  const win = quickCaptureWindow
+  if (!String(content ?? '').replace(/<[^>]*>/g, '').trim()) {
+    if (win && !win.isDestroyed()) win.hide()
+    return null
+  }
+
+  const note = createNoteRecord({ content })
+  store.set(`notes.${note.id}`, encryptNote(note))
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('notes:created', note)
+  }
+  if (win && !win.isDestroyed()) win.hide()
+  return note
+})
+
+ipcMain.handle('quickCapture:close', () => {
+  if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) quickCaptureWindow.hide()
   return true
 })
 
-ipcMain.handle('floating:close', (_, noteId) => {
-  const win = floatingWindows.get(noteId)
-  if (win && !win.isDestroyed()) win.close()
-  return true
+// Grows/shrinks the popup as its content does. Sent continuously while the
+// renderer's GSAP resize animation runs, so this stays a fire-and-forget
+// `send` rather than an `invoke` round trip.
+ipcMain.on('quickCapture:resize', (_, height) => {
+  const win = quickCaptureWindow
+  if (!win || win.isDestroyed()) return
+
+  const bounds = win.getBounds()
+  const clamped = Math.round(Math.min(QUICK_CAPTURE_MAX_HEIGHT, Math.max(QUICK_CAPTURE_HEIGHT, height)))
+  if (clamped === bounds.height) return
+
+  win.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: clamped })
 })
 
 // ── IPC: Theme ────────────────────────────────────────────────────────────────
@@ -427,8 +502,8 @@ ipcMain.handle('app:setOpenAtLogin', (_, openAtLogin) => {
   return app.getLoginItemSettings().openAtLogin
 })
 
-// Returns release notes once, the first time a new version launches after
-// updating. Returns null on every other launch.
+// Signals once, the first time a new version launches after updating, so the
+// renderer can show its "what's new" blurb. Returns null on every other launch.
 ipcMain.handle('app:getWhatsNew', () => {
   const currentVersion = app.getVersion()
   if (store.get('lastSeenVersion') === currentVersion) return null
@@ -437,8 +512,8 @@ ipcMain.handle('app:getWhatsNew', () => {
   store.set('lastSeenVersion', currentVersion)
   store.delete('pendingWhatsNew')
 
-  if (pending?.version === currentVersion && pending.notes) {
-    return { version: currentVersion, notes: pending.notes }
+  if (pending?.version === currentVersion) {
+    return { version: currentVersion }
   }
   return null
 })
@@ -447,20 +522,26 @@ ipcMain.handle('app:getWhatsNew', () => {
 
 ipcMain.handle('updater:check', async () => {
   if (!app.isPackaged) return { status: 'dev' }
+  if (updateState === 'downloading' || updateState === 'downloaded') return { status: 'ok' }
   try {
     const result = await autoUpdater.checkForUpdates()
     return { status: 'ok', version: result?.updateInfo?.version }
   } catch (err) {
+    updateState = 'idle'
     return { status: 'error', message: err.message }
   }
 })
 
 ipcMain.handle('updater:download', async () => {
   if (!app.isPackaged) return { status: 'dev' }
+  // Already downloading or done — don't start a second 70MB download.
+  if (updateState === 'downloading' || updateState === 'downloaded') return { status: 'ok' }
   try {
+    updateState = 'downloading'
     await autoUpdater.downloadUpdate()
     return { status: 'ok' }
   } catch (err) {
+    updateState = 'idle'
     return { status: 'error', message: err.message }
   }
 })

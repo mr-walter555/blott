@@ -3,8 +3,9 @@ import { X, Sparkle } from '@phosphor-icons/react'
 import { MODAL_BACKDROP, MODAL_CONTENT } from '../../utils/motionPresets'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { sanitizeNoteHtml } from '../../utils/sanitizeHtml'
+import { WHATS_NEW_HTML } from '../../utils/whatsNewContent'
 
-export default function WhatsNewModal({ version, notes, onClose }) {
+export default function WhatsNewModal({ version, onClose }) {
   const dialogRef = useFocusTrap()
 
   return (
@@ -34,7 +35,7 @@ export default function WhatsNewModal({ version, notes, onClose }) {
               </div>
               <div
                 className="text-sm text-gray-600 dark:text-gray-400 text-left max-w-md w-full [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_a]:text-brown-600 [&_a]:dark:text-brown-400 [&_a]:underline"
-                dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(notes) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(WHATS_NEW_HTML) }}
               />
             </div>
 

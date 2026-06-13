@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'react-hot-toast'
 import { X } from '@phosphor-icons/react'
 import MainLayout from './pages/MainLayout'
-import StickyNote from './pages/StickyNote'
+import QuickCapture from './pages/QuickCapture'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import SettingsModal from './components/Settings/SettingsModal'
 import WhatsNewModal from './components/common/WhatsNewModal'
@@ -18,8 +18,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { electronService } from './services/electronService'
 
 const params = new URLSearchParams(window.location.search)
-const isStickyMode = params.get('mode') === 'sticky'
-const stickyNoteId = params.get('noteId')
+const isQuickCaptureMode = params.get('mode') === 'quickcapture'
 
 function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondaryLabel = 'Dismiss', progress, dismissOnPrimary = true }) {
   return (
@@ -68,6 +67,7 @@ export default function App() {
   useKeyboardShortcuts()
 
   const initNotes = useNotesStore(s => s.init)
+  const addNoteFromExternal = useNotesStore(s => s.addNoteFromExternal)
   const initWorkspaces = useWorkspaceStore(s => s.init)
   const commandPaletteOpen = useUIStore(s => s.commandPaletteOpen)
   const settingsOpen = useUIStore(s => s.settingsOpen)
@@ -90,10 +90,21 @@ export default function App() {
     if (!electronService.isElectron) return
 
     window.electronAPI.app.getWhatsNew().then(result => {
-      if (!result?.notes?.trim()) return
+      if (!result?.version) return
       setWhatsNew(result)
     })
   }, [])
+
+  // Notes saved from the global Quick Capture popup (Alt+Space) land here live,
+  // so they show up without the user having to reload or navigate.
+  useEffect(() => {
+    if (!electronService.isElectron) return
+
+    return window.electronAPI.onNoteCreated(note => {
+      addNoteFromExternal(note)
+      toast.success('Note captured')
+    })
+  }, [addNoteFromExternal])
 
   // Registered once for the app's lifetime so a silent update check on launch
   // (before any UI is listening) still reaches the user — Settings only shows
@@ -145,8 +156,8 @@ export default function App() {
     })
   }, [setUpdateStatus])
 
-  if (isStickyMode && stickyNoteId) {
-    return <StickyNote noteId={stickyNoteId} />
+  if (isQuickCaptureMode) {
+    return <QuickCapture />
   }
 
   return (
@@ -167,7 +178,6 @@ export default function App() {
           <WhatsNewModal
             key="whats-new"
             version={whatsNew.version}
-            notes={whatsNew.notes}
             onClose={() => setWhatsNew(null)}
           />
         )}

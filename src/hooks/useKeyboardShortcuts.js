@@ -33,7 +33,7 @@ export function useKeyboardShortcuts() {
         openCommandPalette()
       }
 
-      if (ctrl && e.shiftKey && e.key.toLowerCase() === 'a') {
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === 'q') {
         e.preventDefault()
         openAskAI()
       }
