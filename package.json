@@ -1,6 +1,6 @@
 {
   "name": "smart-notepad",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "private": true,
   "description": "AI-powered smart notepad desktop application",
   "author": "mr-walter555",
@@ -82,7 +82,9 @@
       "shared/**/*",
       "package.json"
     ],
-    "electronLanguages": ["en-US"],
+    "electronLanguages": [
+      "en-US"
+    ],
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
@@ -92,7 +94,10 @@
       "allowToChangeInstallationDirectory": true
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "assets/icon.icns"
     },
     "linux": {
