@@ -153,8 +153,6 @@ export const useNotesStore = create((set, get) => ({
 
   clearPendingNoteAppend: () => set({ pendingNoteAppend: null }),
 
-  pinNote: (id, value) => get().updateNote(id, { pinned: value }),
-  favoriteNote: (id, value) => get().updateNote(id, { favorite: value }),
   archiveNote: (id, value) => get().updateNote(id, { archived: value, trashed: false }),
   trashNote: (id, value) => {
     if (id === GUIDE_NOTE_ID) return

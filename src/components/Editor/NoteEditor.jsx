@@ -224,7 +224,7 @@ export default function NoteEditor({ noteId }) {
 
   // Trashed notes are read-only — restoring flips the editor back to editable.
   useEffect(() => {
-    editor?.setEditable(!note?.trashed)
+    editor?.setEditable(!note?.trashed, false)
   }, [editor, note?.trashed])
 
   useEffect(() => {

@@ -20,8 +20,3 @@ export const NOTE_COLORS = {
   indigo: { label: 'Indigo', swatch: '#818cf8', card: 'bg-indigo-50/80',    cardDark: 'dark:bg-indigo-950/20' },
   slate:  { label: 'Slate',  swatch: '#94a3b8', card: 'bg-slate-100/80',    cardDark: 'dark:bg-slate-800/30'  },
 }
-
-export function getColorClasses(color) {
-  const c = NOTE_COLORS[color] || NOTE_COLORS.default
-  return [c.card, c.cardDark].filter(Boolean).join(' ')
-}

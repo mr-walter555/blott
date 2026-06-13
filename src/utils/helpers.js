@@ -47,7 +47,3 @@ export function getWordCount(html) {
   if (!text) return 0
   return text.split(/\s+/).filter(Boolean).length
 }
-
-export function getCharCount(html) {
-  return stripHtml(html).length
-}

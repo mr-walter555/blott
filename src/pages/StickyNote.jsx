@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Minus, ArrowsOut, ArrowSquareOut } from '@phosphor-icons/react'
 import { useNotesStore } from '../store/notesStore'
 import { useTheme } from '../hooks/useTheme'
-import { getColorClasses, NOTE_COLORS } from '../utils/noteColors'
+import { NOTE_COLORS } from '../utils/noteColors'
 import { stripHtml } from '../utils/helpers'
 import { sanitizeNoteHtml } from '../utils/sanitizeHtml'
 
