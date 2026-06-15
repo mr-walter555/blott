@@ -4,6 +4,7 @@ import { Toaster, toast } from 'react-hot-toast'
 import { X } from '@phosphor-icons/react'
 import MainLayout from './pages/MainLayout'
 import QuickCapture from './pages/QuickCapture'
+import StickyNote from './pages/StickyNote'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import SettingsModal from './components/Settings/SettingsModal'
 import WhatsNewModal from './components/common/WhatsNewModal'
@@ -19,6 +20,8 @@ import { electronService } from './services/electronService'
 
 const params = new URLSearchParams(window.location.search)
 const isQuickCaptureMode = params.get('mode') === 'quickcapture'
+const isStickyMode = params.get('mode') === 'sticky'
+const stickyNoteId = params.get('noteId')
 
 function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondaryLabel = 'Dismiss', progress, dismissOnPrimary = true }) {
   return (
@@ -68,6 +71,8 @@ export default function App() {
 
   const initNotes = useNotesStore(s => s.init)
   const addNoteFromExternal = useNotesStore(s => s.addNoteFromExternal)
+  const refreshNotes = useNotesStore(s => s.refreshNotes)
+  const setSelectedNote = useNotesStore(s => s.setSelectedNote)
   const initWorkspaces = useWorkspaceStore(s => s.init)
   const commandPaletteOpen = useUIStore(s => s.commandPaletteOpen)
   const settingsOpen = useUIStore(s => s.settingsOpen)
@@ -103,6 +108,38 @@ export default function App() {
     return window.electronAPI.onNoteCreated(note => {
       addNoteFromExternal(note)
       toast.success('Note captured')
+    })
+  }, [addNoteFromExternal])
+
+  // Quick Capture (and sticky notes) can save notes while this window is
+  // unfocused or wasn't open to receive the live push — catch up whenever
+  // the main window regains focus, same as "refetch on window focus".
+  useEffect(() => {
+    if (!electronService.isElectron) return
+
+    const handleFocus = () => refreshNotes()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [refreshNotes])
+
+  // "Edit" from a floating sticky note brings the main window to the front
+  // and asks it to open that note in the full editor.
+  useEffect(() => {
+    if (!electronService.isElectron) return
+
+    return window.electronAPI.onOpenInMain(noteId => {
+      setSelectedNote(noteId)
+    })
+  }, [setSelectedNote])
+
+  // Notes edited directly in a floating sticky note are saved by the main
+  // process, but this window's store needs telling so the sidebar/editor
+  // reflect those edits too.
+  useEffect(() => {
+    if (!electronService.isElectron) return
+
+    return window.electronAPI.onNoteUpdated(note => {
+      addNoteFromExternal(note)
     })
   }, [addNoteFromExternal])
 
@@ -158,6 +195,10 @@ export default function App() {
 
   if (isQuickCaptureMode) {
     return <QuickCapture />
+  }
+
+  if (isStickyMode && stickyNoteId) {
+    return <StickyNote noteId={stickyNoteId} />
   }
 
   return (

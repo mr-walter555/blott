@@ -145,6 +145,21 @@ export const useNotesStore = create((set, get) => ({
     set(s => ({ notes: { ...s.notes, [note.id]: note } }))
   },
 
+  // Re-syncs from disk without touching selectedNoteId or any open editor's
+  // local state — used when the window regains focus, since Quick Capture
+  // (and sticky notes) can write notes while this window had nothing to push to.
+  refreshNotes: async () => {
+    if (!electronService.isElectron) return
+    try {
+      const notesList = await window.electronAPI.notes.getAll()
+      const notes = {}
+      notesList.forEach(n => { notes[n.id] = n })
+      set({ notes })
+    } catch (err) {
+      console.error('Failed to refresh notes:', err)
+    }
+  },
+
   // Appends HTML to a note's content and persists it. If that note's editor
   // is currently mounted, it also picks up `pendingNoteAppend` to insert the
   // content live (see NoteEditor) — both paths converge on the same final
@@ -165,6 +180,12 @@ export const useNotesStore = create((set, get) => ({
     get().updateNote(id, { trashed: value, archived: false })
   },
   restoreNote: (id) => get().updateNote(id, { trashed: false, archived: false }),
+
+  openAsFloating: (id) => {
+    if (electronService.isElectron) {
+      window.electronAPI.floating.open(id).catch(err => console.error('Failed to open sticky note:', err))
+    }
+  },
 
   getActiveNotes: (view, workspaceId, searchQuery) => {
     const all = Object.values(get().notes)

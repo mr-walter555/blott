@@ -2,6 +2,15 @@ const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, sess
 const path = require('path')
 const { autoUpdater } = require('electron-updater')
 
+// A second launch (e.g. double-clicking the app while it's already running,
+// or `npm run dev` alongside an installed build) would otherwise fight the
+// first instance over the global Alt+Space shortcut and the on-disk cache,
+// producing registration failures and "Access is denied" cache errors.
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+  process.exit(0)
+}
+
 const iconPath = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
 const appIcon = nativeImage.createFromPath(iconPath)
 const Store = require('electron-store')
@@ -49,6 +58,7 @@ const store = new Store({
 
 let mainWindow = null
 let quickCaptureWindow = null
+const floatingWindows = new Map()
 
 function sendUpdateStatus(status, data = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -182,9 +192,92 @@ function createMainWindow() {
   nativeTheme.on('updated', () => {
     const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
     if (mainWindow) mainWindow.webContents.send('theme:changed', theme)
+    floatingWindows.forEach(win => {
+      if (!win.isDestroyed()) win.webContents.send('theme:changed', theme)
+    })
   })
 
   Menu.setApplicationMenu(null)
+}
+
+function createFloatingWindow(noteId) {
+  if (floatingWindows.has(noteId)) {
+    const existing = floatingWindows.get(noteId)
+    if (!existing.isDestroyed()) {
+      existing.focus()
+      return
+    }
+  }
+
+  // Remembers each note's sticky window size/position across sessions,
+  // like Windows' own Sticky Notes app — but only if that position is still
+  // on a connected display, so a stale position from a since-disconnected
+  // monitor doesn't put the window somewhere the user can never see it.
+  const { screen } = require('electron')
+  let savedBounds = store.get(`stickyWindowBounds.${noteId}`)
+  if (savedBounds) {
+    const onScreen = screen.getAllDisplays().some(d => {
+      const { x, y, width, height } = d.workArea
+      return savedBounds.x >= x && savedBounds.y >= y && savedBounds.x < x + width && savedBounds.y < y + height
+    })
+    if (!onScreen) savedBounds = null
+  }
+
+  const floatWin = new BrowserWindow({
+    width: savedBounds?.width ?? 320,
+    height: savedBounds?.height ?? 320,
+    ...(savedBounds ? { x: savedBounds.x, y: savedBounds.y } : {}),
+    minWidth: 220,
+    minHeight: 160,
+    alwaysOnTop: true,
+    frame: false,
+    transparent: true,
+    resizable: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+    skipTaskbar: false,
+    hasShadow: true,
+    show: false,
+  })
+
+  // `transparent: true` windows render as fully invisible until content
+  // paints — without this, the window "shows" immediately as a blank,
+  // unclickable rectangle while the page (and its editor bundle) loads.
+  floatWin.once('ready-to-show', () => {
+    floatWin.show()
+  })
+
+  if (isDev) {
+    floatWin.loadURL(`http://localhost:5173/?mode=sticky&noteId=${noteId}`)
+  } else {
+    floatWin.loadFile(path.join(__dirname, '../dist/index.html'), {
+      query: { mode: 'sticky', noteId },
+    })
+  }
+
+  let saveBoundsTimer = null
+  const saveBounds = () => {
+    clearTimeout(saveBoundsTimer)
+    saveBoundsTimer = setTimeout(() => {
+      if (!floatWin.isDestroyed()) store.set(`stickyWindowBounds.${noteId}`, floatWin.getBounds())
+    }, 500)
+  }
+  floatWin.on('resize', saveBounds)
+  floatWin.on('move', saveBounds)
+  floatWin.on('close', () => {
+    clearTimeout(saveBoundsTimer)
+    if (!floatWin.isDestroyed()) store.set(`stickyWindowBounds.${noteId}`, floatWin.getBounds())
+  })
+
+  floatingWindows.set(noteId, floatWin)
+
+  floatWin.on('closed', () => {
+    floatingWindows.delete(noteId)
+  })
 }
 
 const QUICK_CAPTURE_WIDTH = 480
@@ -313,6 +406,18 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })
+
+  // A second launch attempt was blocked by the single-instance lock above —
+  // bring the existing window to the foreground instead of staying hidden.
+  app.on('second-instance', () => {
+    if (!mainWindow) {
+      createMainWindow()
+      return
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  })
 })
 
 app.on('window-all-closed', () => {
@@ -335,17 +440,28 @@ ipcMain.handle('notes:create', (_, data) => {
   return note
 })
 
-ipcMain.handle('notes:update', (_, id, updates) => {
+ipcMain.handle('notes:update', (event, id, updates) => {
   const notes = store.get('notes', {})
   if (!notes[id]) return null
   const existing = decryptNote(notes[id])
   const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() }
   store.set(`notes.${id}`, encryptNote(updated))
+  floatingWindows.forEach((win, noteId) => {
+    if (noteId === id && !win.isDestroyed()) {
+      win.webContents.send('note:updated', updated)
+    }
+  })
+  // Also notify the main window — e.g. so the sidebar/editor pick up edits
+  // made directly in a floating sticky note.
+  if (mainWindow && !mainWindow.isDestroyed() && event.sender !== mainWindow.webContents) {
+    mainWindow.webContents.send('note:updated', updated)
+  }
   return updated
 })
 
 ipcMain.handle('notes:delete', (_, id) => {
   store.delete(`notes.${id}`)
+  store.delete(`stickyWindowBounds.${id}`)
   return true
 })
 
@@ -431,6 +547,37 @@ ipcMain.handle('ai:askNotes', async (_, question, notes, history) => {
 
 ipcMain.handle('encryption:status', () => {
   return getEncryptionStatus()
+})
+
+// ── IPC: Floating Notes ───────────────────────────────────────────────────────
+
+ipcMain.handle('floating:open', (_, noteId) => {
+  createFloatingWindow(noteId)
+  return true
+})
+
+ipcMain.handle('floating:close', (_, noteId) => {
+  const win = floatingWindows.get(noteId)
+  if (win && !win.isDestroyed()) win.close()
+  return true
+})
+
+// "Edit" from a sticky note's toolbar — bring the main window to the front
+// and tell its renderer to open this note in the full editor.
+ipcMain.handle('floating:editInMain', (_, noteId) => {
+  const focusAndSend = () => {
+    mainWindow.show()
+    mainWindow.focus()
+    mainWindow.webContents.send('notes:openInMain', noteId)
+  }
+
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow()
+    mainWindow.webContents.once('did-finish-load', focusAndSend)
+  } else {
+    focusAndSend()
+  }
+  return true
 })
 
 // ── IPC: Quick Capture ────────────────────────────────────────────────────────
@@ -547,6 +694,10 @@ ipcMain.handle('updater:download', async () => {
 })
 
 ipcMain.handle('updater:install', () => {
-  autoUpdater.quitAndInstall()
+  // `/S` makes NSIS skip its wizard pages even on an "assisted" (oneClick:
+  // false) installer, so the in-app update is silent while a manually-run
+  // download still gets the full install wizard. `isForceRunAfter` relaunches
+  // the app afterward, since a silent install otherwise wouldn't.
+  autoUpdater.quitAndInstall(true, true)
   return true
 })

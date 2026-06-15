@@ -206,6 +206,21 @@ export default function NoteEditor({ noteId }) {
     }
   }, [noteId])
 
+  // If this note is edited elsewhere (e.g. a floating sticky note) while open
+  // here, refresh title/content from the broadcast — but only when this
+  // editor has no unsaved local changes, so we never clobber active edits.
+  useEffect(() => {
+    if (!window.electronAPI?.onNoteUpdated) return
+    return window.electronAPI.onNoteUpdated((updated) => {
+      if (updated.id !== noteId || saveStatus !== 'saved') return
+      setTitle(updated.title || '')
+      if (editor && editor.getHTML() !== updated.content) {
+        editor.commands.setContent(updated.content || '', false)
+        setContent(updated.content || '')
+      }
+    })
+  }, [noteId, editor, saveStatus])
+
   // Live-insert content appended from elsewhere (e.g. "Add to note" in Ask AI)
   // when this note's editor happens to be open.
   useEffect(() => {

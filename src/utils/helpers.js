@@ -47,3 +47,27 @@ export function getWordCount(html) {
   if (!text) return 0
   return text.split(/\s+/).filter(Boolean).length
 }
+
+// Inspects a note's TipTap HTML to decide how to preview it in compact UI
+// (e.g. the sticky note card): as an image, a checklist, or plain text.
+export function parseNotePreview(html) {
+  if (!html) return { type: 'text', text: '' }
+
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+
+  const img = doc.querySelector('img')
+  if (img?.src) return { type: 'image', src: img.src }
+
+  const taskItems = doc.querySelectorAll('li[data-type="taskItem"]')
+  if (taskItems.length) {
+    return {
+      type: 'checklist',
+      items: Array.from(taskItems).map(li => ({
+        checked: li.getAttribute('data-checked') === 'true',
+        text: (li.textContent || '').trim(),
+      })),
+    }
+  }
+
+  return { type: 'text', text: stripHtml(html) }
+}

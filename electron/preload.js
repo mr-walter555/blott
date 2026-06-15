@@ -32,6 +32,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     askNotes: (question, notes, history) => ipcRenderer.invoke('ai:askNotes', question, notes, history),
   },
 
+  floating: {
+    open: (noteId) => ipcRenderer.invoke('floating:open', noteId),
+    close: (noteId) => ipcRenderer.invoke('floating:close', noteId),
+    editInMain: (noteId) => ipcRenderer.invoke('floating:editInMain', noteId),
+  },
+
   quickCapture: {
     save: (content) => ipcRenderer.invoke('quickCapture:save', content),
     close: () => ipcRenderer.invoke('quickCapture:close'),
@@ -80,5 +86,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_, note) => callback(note)
     ipcRenderer.on('notes:created', handler)
     return () => ipcRenderer.removeListener('notes:created', handler)
+  },
+
+  onNoteUpdated: (callback) => {
+    const handler = (_, note) => callback(note)
+    ipcRenderer.on('note:updated', handler)
+    return () => ipcRenderer.removeListener('note:updated', handler)
+  },
+
+  onOpenInMain: (callback) => {
+    const handler = (_, noteId) => callback(noteId)
+    ipcRenderer.on('notes:openInMain', handler)
+    return () => ipcRenderer.removeListener('notes:openInMain', handler)
   },
 })
