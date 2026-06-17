@@ -48,6 +48,10 @@ function NoteIcon({ note }) {
   return <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
 }
 
+function noteSnippet(note) {
+  return note.content?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 72) || ''
+}
+
 export default function Sidebar() {
   const sidebarCollapsed   = useUIStore(s => s.sidebarCollapsed)
   const toggleSidebar      = useUIStore(s => s.toggleSidebar)
@@ -140,7 +144,7 @@ export default function Sidebar() {
       <div className="mx-3 border-t border-gray-200 dark:border-gray-800 mb-1" />
 
       {/* Recents + Workspaces */}
-      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'none' }}>
         <AnimatePresence initial={false}>
           {!c && (
             <motion.div
@@ -179,23 +183,30 @@ export default function Sidebar() {
                     ) : (
                       <button
                         onClick={() => setSelectedNote(note.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                        className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors ${
                           note.id === selectedNoteId
                             ? 'bg-gray-200/70 dark:bg-gray-800'
                             : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                         }`}
                       >
                         <NoteIcon note={note} />
-                        <span className={`text-sm truncate flex-1 ${
-                          note.id === selectedNoteId
-                            ? 'text-gray-900 dark:text-gray-100 font-medium'
-                            : 'text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {note.title || 'Untitled'}
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate ${
+                            note.id === selectedNoteId
+                              ? 'text-gray-900 dark:text-gray-100 font-medium'
+                              : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {note.title || 'Untitled'}
+                          </p>
+                          {noteSnippet(note) && (
+                            <p className="text-xs text-gray-400 dark:text-gray-600 truncate mt-0.5">
+                              {noteSnippet(note)}
+                            </p>
+                          )}
+                        </div>
                         <button
                           onClick={e => openMenu(e, note)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all flex-shrink-0 focus:opacity-100"
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
                           tabIndex={0}
                         >
                           <DotsThree className="w-4 h-4 text-gray-500" weight="bold" />
@@ -215,8 +226,8 @@ export default function Sidebar() {
                   onClick={() => setWorkspacesExpanded(!workspacesExpanded)}
                   className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors"
                 >
+                  <span className="flex-1 text-left">Workspaces</span>
                   {workspacesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
-                  Workspaces
                 </button>
                 <AnimatePresence initial={false}>
                   {workspacesExpanded && (

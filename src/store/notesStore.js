@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { electronService } from '../services/electronService'
 import { v4 as uuidv4 } from 'uuid'
-import { GUIDE_NOTE_ID, makeGuideNote } from '../utils/guideNote'
+import { GUIDE_NOTE_ID, GUIDE_NOTE_VERSION, makeGuideNote } from '../utils/guideNote'
 
 const FALLBACK_KEY = 'sn_notes'
 
@@ -47,6 +47,17 @@ export const useNotesStore = create((set, get) => ({
         } else {
           const local = loadLocal()
           local[GUIDE_NOTE_ID] = guide
+          saveLocal(local)
+        }
+      } else if (notes[GUIDE_NOTE_ID].guideVersion !== GUIDE_NOTE_VERSION) {
+        const { content } = makeGuideNote()
+        const migrated = { ...notes[GUIDE_NOTE_ID], content, guideVersion: GUIDE_NOTE_VERSION }
+        notes[GUIDE_NOTE_ID] = migrated
+        if (electronService.isElectron) {
+          await window.electronAPI.notes.update(GUIDE_NOTE_ID, { content, guideVersion: GUIDE_NOTE_VERSION })
+        } else {
+          const local = loadLocal()
+          local[GUIDE_NOTE_ID] = migrated
           saveLocal(local)
         }
       }

@@ -16,7 +16,9 @@ import { useWorkspaceStore } from './store/workspaceStore'
 import { useUIStore } from './store/uiStore'
 import { useTheme } from './hooks/useTheme'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useFileDropImport } from './hooks/useFileDropImport'
 import { electronService } from './services/electronService'
+import TitleBar from './components/TitleBar/TitleBar'
 
 const params = new URLSearchParams(window.location.search)
 const isQuickCaptureMode = params.get('mode') === 'quickcapture'
@@ -68,6 +70,7 @@ function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondary
 export default function App() {
   useTheme()
   useKeyboardShortcuts()
+  useFileDropImport()
 
   const initNotes = useNotesStore(s => s.init)
   const addNoteFromExternal = useNotesStore(s => s.addNoteFromExternal)
@@ -201,8 +204,11 @@ export default function App() {
     return <StickyNote noteId={stickyNoteId} />
   }
 
+  const isWin32 = electronService.isElectron && window.electronAPI?.platform === 'win32'
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col">
+      {isWin32 && <TitleBar />}
       <MainLayout />
       {/* AskAIModal is always mounted so conversation state survives open/close cycles */}
       <AskAIModal />

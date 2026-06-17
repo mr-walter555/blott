@@ -19,6 +19,7 @@ import { useNotesStore } from '../store/notesStore'
 import { useTheme } from '../hooks/useTheme'
 import { NOTE_COLORS } from '../utils/noteColors'
 import { formatDate } from '../utils/helpers'
+import { handleLinkClick } from '../utils/handleLinkClick'
 
 const lowlight = createLowlight(common)
 
@@ -87,6 +88,7 @@ export default function StickyNote({ noteId }) {
         class: 'tiptap-editor ProseMirror min-h-full focus:outline-none',
         spellcheck: 'true',
       },
+      handleClick: handleLinkClick,
       handlePaste: (view, event) => {
         const imageFiles = Array.from(event.clipboardData?.items || [])
           .filter(item => item.kind === 'file' && item.type.startsWith('image/'))

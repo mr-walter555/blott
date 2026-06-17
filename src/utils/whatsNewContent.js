@@ -5,17 +5,27 @@
 //
 // Update this alongside each release to describe what's new since the last
 // version.
-import { Note, CloudArrowDown } from '@phosphor-icons/react'
+import { AppWindow, FileArrowDown, ArrowSquareOut, Bell } from '@phosphor-icons/react'
 
 export const WHATS_NEW_ITEMS = [
   {
-    icon: Note,
-    title: 'Sticky notes are back',
-    description: 'Pop any note out into a small always-on-top window from its menu, just like the old sticky notes.',
+    icon: AppWindow,
+    title: 'Fresh new look',
+    description: 'Custom title bar, Geist font, and a tighter editor column — the app feels more at home on your desktop.',
   },
   {
-    icon: CloudArrowDown,
-    title: 'Quieter updates',
-    description: "Restarting to install an update no longer shows the installer wizard — it just installs and reopens Smart Notepad.",
+    icon: FileArrowDown,
+    title: 'Drag-and-drop import',
+    description: 'Drop a .txt or .md file anywhere on the window to import it as a new note instantly.',
+  },
+  {
+    icon: ArrowSquareOut,
+    title: 'Ctrl+click to open links',
+    description: 'Hold Ctrl and click any link in a note to open it in your browser — plain clicks still let you edit.',
+  },
+  {
+    icon: Bell,
+    title: 'Desktop notifications',
+    description: 'Quick Capture and update alerts now show native OS notifications when Smart Notepad is in the background.',
   },
 ]

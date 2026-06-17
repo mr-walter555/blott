@@ -75,7 +75,7 @@ export default function MainLayout() {
   }, [])
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-950">
       {/* Left sidebar */}
       <div
         ref={sidebarRef}

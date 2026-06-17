@@ -72,6 +72,7 @@ export default function SettingsModal() {
   const [appInfo, setAppInfo] = useState(null)
   const [openAtLogin, setOpenAtLoginState] = useState(false)
   const [openAtLoginSaving, setOpenAtLoginSaving] = useState(false)
+  const [startMinimized, setStartMinimized] = useState(false)
   const updateStatus = useUIStore(s => s.updateStatus)
   const setUpdateStatus = useUIStore(s => s.setUpdateStatus)
   const [apiKey, setApiKey] = useState('')
@@ -95,7 +96,10 @@ export default function SettingsModal() {
 
   useEffect(() => {
     if (electronService.isElectron) {
-      window.electronAPI.settings.get().then(s => setApiKey(s.openRouterApiKey || ''))
+      window.electronAPI.settings.get().then(s => {
+        setApiKey(s.openRouterApiKey || '')
+        setStartMinimized(!!s.startMinimized)
+      })
     }
   }, [])
 
@@ -129,6 +133,12 @@ export default function SettingsModal() {
     setOpenAtLoginSaving(true)
     await window.electronAPI.app.setOpenAtLogin(next)
     setOpenAtLoginSaving(false)
+  }
+
+  const toggleStartMinimized = async () => {
+    const next = !startMinimized
+    setStartMinimized(next)
+    await window.electronAPI.settings.set({ startMinimized: next })
   }
 
   const openDataFolder = () => window.electronAPI.app.openDataFolder()
@@ -488,6 +498,10 @@ export default function SettingsModal() {
 
                       <SettingRow label="Launch at Startup" description="Automatically open Smart Notepad when you log in">
                         <Toggle checked={openAtLogin} onChange={toggleOpenAtLogin} disabled={openAtLoginSaving} />
+                      </SettingRow>
+
+                      <SettingRow label="Start Minimized" description="Open directly to the tray instead of showing the window">
+                        <Toggle checked={startMinimized} onChange={toggleStartMinimized} disabled={!openAtLogin} />
                       </SettingRow>
 
                       <SettingRow label="Data Folder" description="Where your encrypted notes are stored on disk">

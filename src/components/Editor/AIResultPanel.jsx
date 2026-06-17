@@ -49,7 +49,7 @@ export default function AIResultPanel({
       exit={{    opacity: 0, y: 4 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       className="fixed z-50"
-      style={{ top, left: paddedLeft, width: paddedW, fontFamily: 'Sora Variable, sans-serif' }}
+      style={{ top, left: paddedLeft, width: paddedW }}
     >
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
 

@@ -27,6 +27,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import NoteHeader from './NoteHeader'
 import { getWordCount } from '../../utils/helpers'
 import { markdownToHtml } from '../../utils/markdownToHtml'
+import { handleLinkClick } from '../../utils/handleLinkClick'
 
 const CODE_KEYWORDS = /\b(function|const|let|var|import|export|def|async|await|=>|interface|typeof|instanceof)\b/
 const CODE_SYMBOLS = /[{};]|=>|::|->|&&|\|\||\/\//
@@ -157,6 +158,7 @@ export default function NoteEditor({ noteId }) {
         class: 'tiptap-editor ProseMirror min-h-full focus:outline-none',
         spellcheck: 'true',
       },
+      handleClick: handleLinkClick,
       handlePaste: (view, event) => {
         const imageFiles = Array.from(event.clipboardData?.items || [])
           .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
@@ -233,7 +235,7 @@ export default function NoteEditor({ noteId }) {
     if (editor) {
       const size = fontSize === 'small' ? '14px' : fontSize === 'large' ? '18px' : '16px'
       editor.view.dom.style.fontSize = size
-      editor.view.dom.style.fontFamily = (FONT_FAMILIES[fontFamily] || FONT_FAMILIES.sora).value
+      editor.view.dom.style.fontFamily = (FONT_FAMILIES[fontFamily] || FONT_FAMILIES.geist).value
     }
   }, [editor, fontSize, fontFamily])
 
@@ -327,7 +329,7 @@ export default function NoteEditor({ noteId }) {
 
         <div className="flex-1 flex overflow-hidden relative">
           <div className="flex-1 overflow-y-auto tiptap-scroll" ref={scrollRef} onScroll={handleScroll} style={{scrollbarWidth:'none'}}>
-          <div className={`mx-auto px-8 py-6 max-w-3xl`}>
+          <div className={`mx-auto px-10 pt-10 pb-24 max-w-3xl`}>
             <input
               type="text"
               value={title}

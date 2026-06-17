@@ -26,7 +26,7 @@ export default function AIActionMenu({ onSelect }) {
       exit={{ opacity: 0, y: 4 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-lg overflow-hidden w-56"
-      style={{ fontFamily: 'Sora Variable, sans-serif' }}>
+>
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-gray-100 dark:border-gray-800">

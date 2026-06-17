@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Sora Variable', 'sans-serif'],
+        sans: ['Geist Variable', 'sans-serif'],
       },
       colors: {
         // Neutral near-black scale for dark mode — replaces Tailwind's default

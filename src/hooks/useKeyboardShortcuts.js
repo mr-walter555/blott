@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNotesStore } from '../store/notesStore'
 import { useUIStore } from '../store/uiStore'
+import { exportAsPDF } from '../utils/exportNote'
 
 export function useKeyboardShortcuts() {
   const createNote = useNotesStore(s => s.createNote)
@@ -21,6 +22,14 @@ export function useKeyboardShortcuts() {
       if (ctrl && e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault()
         openCommandPalette()
+      }
+
+      // Print the current note via the OS print dialog (same flow as "Export as PDF").
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        const { notes, selectedNoteId } = useNotesStore.getState()
+        const note = notes[selectedNoteId]
+        if (note) exportAsPDF(note.title, note.content)
       }
 
       if (ctrl && e.key === ',') {

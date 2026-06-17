@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session, globalShortcut } = require('electron')
+const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session, globalShortcut, Tray, Notification, powerMonitor } = require('electron')
 const path = require('path')
 const { autoUpdater } = require('electron-updater')
 
@@ -29,6 +29,27 @@ contextMenu({
   showInspectElement: isDev,
 })
 
+// Keep every window (main, sticky notes, quick capture) confined to the
+// app's own pages. A link inside note content — or any future external
+// content — should never navigate a window away from the app or spawn an
+// unrestricted Electron window; http(s) URLs go to the system browser instead.
+const APP_ORIGIN = isDev ? 'http://localhost:5173' : 'file://'
+
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (event, url) => {
+    if (url.startsWith(APP_ORIGIN)) return
+    event.preventDefault()
+    if (/^https?:/.test(url)) shell.openExternal(url)
+  })
+
+  contents.setWindowOpenHandler(({ url }) => {
+    // exportAsPDF() opens a blank window to render a note for printing.
+    if (url === 'about:blank') return { action: 'allow' }
+    if (/^https?:/.test(url)) shell.openExternal(url)
+    return { action: 'deny' }
+  })
+})
+
 // Auto-updates: let the user decide when to download, and skip signature
 // verification since builds aren't code-signed yet.
 autoUpdater.autoDownload = false
@@ -50,7 +71,7 @@ const store = new Store({
       theme: 'system',
       fontSize: 'medium',
       autoSaveInterval: 2000,
-      fontFamily: 'Google Sans',
+      fontFamily: 'geist',
       startMinimized: false,
     },
   },
@@ -58,12 +79,26 @@ const store = new Store({
 
 let mainWindow = null
 let quickCaptureWindow = null
+let tray = null
+let isQuitting = false
 const floatingWindows = new Map()
 
 function sendUpdateStatus(status, data = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('updater:status', { status, ...data })
   }
+}
+
+// Surfaces background events (Quick Capture saves, update downloads) via the
+// OS notification center — the in-app toast for the same event only reaches
+// the user if the main window happens to be visible and focused.
+function notifyIfUnfocused(title, body) {
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()) return
+  if (!Notification.isSupported()) return
+
+  const notification = new Notification({ title, body, icon: appIcon })
+  notification.on('click', showMainWindow)
+  notification.show()
 }
 
 // Tracks where we are in the update lifecycle so the periodic background
@@ -96,15 +131,19 @@ autoUpdater.on('update-not-available', () => {
 autoUpdater.on('error', (err) => {
   if (updateState !== 'downloaded') updateState = 'idle'
   sendUpdateStatus('error', { message: err?.message || String(err) })
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(-1)
 })
 autoUpdater.on('download-progress', (progress) => {
   updateState = 'downloading'
   sendUpdateStatus('downloading', { percent: progress.percent })
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(progress.percent / 100)
 })
 autoUpdater.on('update-downloaded', (info) => {
   updateState = 'downloaded'
   store.set('pendingWhatsNew', { version: info.version })
   sendUpdateStatus('downloaded', { version: info.version })
+  notifyIfUnfocused('Update ready', `Smart Notepad v${info.version} is ready — restart to install.`)
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(-1)
 })
 
 // Title and content are the sensitive parts of a note; everything else
@@ -127,7 +166,10 @@ function decryptNote(note) {
 }
 
 function createMainWindow() {
-  const { width, height, x, y } = store.get('windowState', { width: 1400, height: 900 })
+  const { width, height, x, y, isMaximized } = store.get('windowState', { width: 1400, height: 900 })
+  // Auto-launch passes --hidden; whether that means "start in the tray" is
+  // controlled by the startMinimized setting, checked here at launch time.
+  const startHidden = process.argv.includes('--hidden') && store.get('settings', {}).startMinimized
 
   mainWindow = new BrowserWindow({
     width,
@@ -142,12 +184,18 @@ function createMainWindow() {
       nodeIntegration: false,
       sandbox: true,
     },
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    frame: process.platform !== 'darwin',
-    backgroundColor: '#0f1117',
+    // macOS: hiddenInset keeps native traffic lights over the content.
+    // Windows: fully frameless — the React TitleBar component provides the chrome.
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    frame: false,
+    backgroundColor: '#030712',
     icon: appIcon,
     show: false,
   })
+
+  // Push maximize state to the renderer so the custom title bar button can toggle correctly.
+  mainWindow.on('maximize', () => { if (!mainWindow.isDestroyed()) mainWindow.webContents.send('window:maximized', true) })
+  mainWindow.on('unmaximize', () => { if (!mainWindow.isDestroyed()) mainWindow.webContents.send('window:maximized', false) })
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
@@ -167,26 +215,46 @@ function createMainWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.setIcon(appIcon)
-    mainWindow.show()
-    mainWindow.focus()
+    if (isMaximized) mainWindow.maximize()
+    if (!startHidden) {
+      mainWindow.show()
+      mainWindow.focus()
+    }
   })
 
   mainWindow.on('closed', () => {
     mainWindow = null
   })
 
-  // Remember window size/position so the app reopens where the user left it
+  // Remember window size/position (and maximized state) so the app reopens
+  // where the user left it. Bounds are only captured while restored — while
+  // maximized, getBounds() returns the full-screen size, which would become
+  // the "restored" size on the next launch.
   let saveStateTimer = null
+  const captureWindowState = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    const maximized = mainWindow.isMaximized()
+    const state = { ...store.get('windowState', {}), isMaximized: maximized }
+    if (!maximized) Object.assign(state, mainWindow.getBounds())
+    store.set('windowState', state)
+  }
   const saveWindowState = () => {
     clearTimeout(saveStateTimer)
-    saveStateTimer = setTimeout(() => {
-      if (mainWindow && !mainWindow.isDestroyed()) store.set('windowState', mainWindow.getBounds())
-    }, 500)
+    saveStateTimer = setTimeout(captureWindowState, 500)
   }
   mainWindow.on('resize', saveWindowState)
   mainWindow.on('move', saveWindowState)
-  mainWindow.on('close', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) store.set('windowState', mainWindow.getBounds())
+  mainWindow.on('close', (event) => {
+    captureWindowState()
+
+    // The X button minimizes to the tray instead of quitting, like Windows'
+    // own Sticky Notes — the app keeps running for Quick Capture and any
+    // open sticky notes. "Quit" from the tray menu (or an actual app quit,
+    // e.g. installing an update) sets isQuitting and lets this close through.
+    if (!isQuitting) {
+      event.preventDefault()
+      mainWindow.hide()
+    }
   })
 
   nativeTheme.on('updated', () => {
@@ -198,6 +266,32 @@ function createMainWindow() {
   })
 
   Menu.setApplicationMenu(null)
+}
+
+// Brings the main window to front, recreating or restoring it as needed —
+// used by the tray icon, its "Open" menu item, the dock icon (macOS), and a
+// second launch attempt blocked by the single-instance lock.
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow()
+    return
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function createTray() {
+  tray = new Tray(appIcon)
+  tray.setToolTip('Smart Notepad')
+  tray.on('click', showMainWindow)
+
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Open Smart Notepad', click: showMainWindow },
+    { label: 'Quick Capture', click: toggleQuickCapture },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { isQuitting = true; app.quit() } },
+  ]))
 }
 
 function createFloatingWindow(noteId) {
@@ -388,7 +482,16 @@ app.whenReady().then(async () => {
   initEncryption()
   // Clear corrupted disk cache on startup to prevent backend_impl errors
   try { await session.defaultSession.clearCache() } catch {}
+
+  // Re-register the login item with --hidden for users who enabled "Launch at
+  // Startup" before that flag existed, so startMinimized can take effect.
+  const loginSettings = app.getLoginItemSettings()
+  if (loginSettings.openAtLogin && !loginSettings.args?.includes('--hidden')) {
+    app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] })
+  }
+
   createMainWindow()
+  createTray()
 
   // Global Quick Capture: works system-wide while the app is running,
   // even if the main window isn't focused or visible.
@@ -401,27 +504,25 @@ app.whenReady().then(async () => {
   if (app.isPackaged) {
     setTimeout(safeCheckForUpdates, 3000)
     setInterval(safeCheckForUpdates, UPDATE_CHECK_INTERVAL_MS)
+
+    // A laptop can sleep for hours/days, during which the interval above
+    // doesn't fire — recheck as soon as the system wakes up.
+    powerMonitor.on('resume', safeCheckForUpdates)
   }
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
-  })
+  app.on('activate', showMainWindow)
 
   // A second launch attempt was blocked by the single-instance lock above —
   // bring the existing window to the foreground instead of staying hidden.
-  app.on('second-instance', () => {
-    if (!mainWindow) {
-      createMainWindow()
-      return
-    }
-    if (mainWindow.isMinimized()) mainWindow.restore()
-    mainWindow.show()
-    mainWindow.focus()
-  })
+  app.on('second-instance', showMainWindow)
 })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
 app.on('will-quit', () => {
@@ -595,6 +696,7 @@ ipcMain.handle('quickCapture:save', (_, content) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('notes:created', note)
   }
+  notifyIfUnfocused('Note captured', 'Saved to Smart Notepad')
   if (win && !win.isDestroyed()) win.hide()
   return note
 })
@@ -629,6 +731,15 @@ ipcMain.handle('theme:setNative', (_, setting) => {
   return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
 })
 
+// ── IPC: Custom title bar window controls ─────────────────────────────────────
+ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })
+ipcMain.handle('window:maximize', () => {
+  if (!mainWindow) return
+  mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
+})
+ipcMain.handle('window:close', () => { mainWindow?.close() })
+ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+
 // ── IPC: App ──────────────────────────────────────────────────────────────────
 
 ipcMain.handle('app:getInfo', () => {
@@ -645,7 +756,10 @@ ipcMain.handle('app:openDataFolder', () => {
 })
 
 ipcMain.handle('app:setOpenAtLogin', (_, openAtLogin) => {
-  app.setLoginItemSettings({ openAtLogin })
+  // Pass --hidden so createMainWindow() can tell an auto-launch from a manual
+  // one; whether that actually skips showing the window depends on the
+  // separate "startMinimized" setting, checked at launch time.
+  app.setLoginItemSettings({ openAtLogin, args: openAtLogin ? ['--hidden'] : [] })
   return app.getLoginItemSettings().openAtLogin
 })
 
