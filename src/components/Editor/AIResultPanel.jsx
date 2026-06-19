@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+﻿import { motion } from 'framer-motion'
 import { Check, ArrowBendDownLeft, X, ArrowCounterClockwise, Sparkle, ThumbsUp, ThumbsDown } from '@phosphor-icons/react'
 
 function FormattedText({ text }) {
@@ -19,10 +19,10 @@ function FormattedText({ text }) {
         return isBullet ? (
           <div key={i} className="flex items-start gap-2.5">
             <span className="mt-2 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 flex-shrink-0" />
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{parts}</p>
+            <p className="text-sm text-gray-700 dark:text-muted leading-relaxed">{parts}</p>
           </div>
         ) : (
-          <p key={i} className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{parts}</p>
+          <p key={i} className="text-sm text-gray-700 dark:text-muted leading-relaxed">{parts}</p>
         )
       })}
     </div>
@@ -55,8 +55,8 @@ export default function AIResultPanel({
 
         {/* Header row */}
         <div className="flex items-center gap-2 px-4 pt-3.5 pb-1">
-          <Sparkle className="w-3.5 h-3.5 text-brown-500 flex-shrink-0" weight="fill" />
-          <span className="text-xs font-medium text-gray-400 dark:text-gray-600">{actionLabel}</span>
+          <Sparkle className="w-3.5 h-3.5 text-brown-500 flex-shrink-0" />
+          <span className="text-xs font-medium text-muted dark:text-gray-600">{actionLabel}</span>
         </div>
 
         {/* Result body */}
@@ -75,7 +75,7 @@ export default function AIResultPanel({
               onMouseDown={e => { e.preventDefault(); onReplace() }}
               className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg transition-colors"
             >
-              <Check className="w-3 h-3" weight="bold" />
+              <Check className="w-3 h-3" />
               Replace
             </button>
           )}
@@ -84,7 +84,7 @@ export default function AIResultPanel({
               onMouseDown={e => { e.preventDefault(); onInsertBelow() }}
               className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
                 showReplace
-                  ? 'text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
+                  ? 'text-muted border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                   : 'font-semibold bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white'
               }`}
             >
@@ -96,11 +96,11 @@ export default function AIResultPanel({
           {/* Right side icon buttons */}
           <div className="flex items-center gap-0.5 ml-auto">
             <button onMouseDown={e => { e.preventDefault(); onRetry() }}
-              className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors" title="Retry" aria-label="Retry">
+              className="p-1.5 rounded-lg text-muted hover:text-gray-600 dark:hover:text-muted hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors" title="Retry" aria-label="Retry">
               <ArrowCounterClockwise className="w-3.5 h-3.5" />
             </button>
             <button onMouseDown={e => { e.preventDefault(); onDiscard() }}
-              className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors" title="Dismiss" aria-label="Dismiss">
+              className="p-1.5 rounded-lg text-muted hover:text-gray-600 dark:hover:text-muted hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors" title="Dismiss" aria-label="Dismiss">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>

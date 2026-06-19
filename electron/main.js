@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session, globalShortcut, Tray, Notification, powerMonitor } = require('electron')
+const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, nativeImage, session, globalShortcut, Tray, Notification, powerMonitor, screen } = require('electron')
+const { loadWindowState, saveWindowState, enforceOnScreen, MIN_WIDTH, MIN_HEIGHT } = require('./windowManager')
 const path = require('path')
 const { autoUpdater } = require('electron-updater')
 
@@ -71,7 +72,7 @@ const store = new Store({
       theme: 'system',
       fontSize: 'medium',
       autoSaveInterval: 2000,
-      fontFamily: 'geist',
+      fontFamily: 'google-sans',
       startMinimized: false,
     },
   },
@@ -166,18 +167,24 @@ function decryptNote(note) {
 }
 
 function createMainWindow() {
-  const { width, height, x, y, isMaximized } = store.get('windowState', { width: 1400, height: 900 })
   // Auto-launch passes --hidden; whether that means "start in the tray" is
   // controlled by the startMinimized setting, checked here at launch time.
   const startHidden = process.argv.includes('--hidden') && store.get('settings', {}).startMinimized
 
+  // Detect unclean shutdown: if _sessionStarted was never cleared, the previous
+  // process crashed.  In that case we ignore saved coordinates.
+  const wasCrash = store.get('_sessionStarted', false)
+  if (wasCrash) console.log('[main] Crash recovery: previous session did not exit cleanly.')
+  store.set('_sessionStarted', true)
+
+  const { width, height, x, y, isMaximized } = loadWindowState(store, screen, { wasCrash })
+
   mainWindow = new BrowserWindow({
     width,
     height,
-    x,
-    y,
-    minWidth: 960,
-    minHeight: 600,
+    ...(x !== undefined && y !== undefined ? { x, y } : {}),
+    minWidth: MIN_WIDTH,
+    minHeight: MIN_HEIGHT,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -194,7 +201,7 @@ function createMainWindow() {
   })
 
   // Push maximize state to the renderer so the custom title bar button can toggle correctly.
-  mainWindow.on('maximize', () => { if (!mainWindow.isDestroyed()) mainWindow.webContents.send('window:maximized', true) })
+  mainWindow.on('maximize',   () => { if (!mainWindow.isDestroyed()) mainWindow.webContents.send('window:maximized', true)  })
   mainWindow.on('unmaximize', () => { if (!mainWindow.isDestroyed()) mainWindow.webContents.send('window:maximized', false) })
 
   if (isDev) {
@@ -213,7 +220,19 @@ function createMainWindow() {
     return false
   })
 
+  // Failsafe: if the window hasn't become visible within 5 s (renderer crash,
+  // very slow disk, etc.) force it onto the primary display and show it.
+  const failsafeTimer = setTimeout(() => {
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return
+    console.log('[main] Failsafe triggered — window did not appear within 5 s. Centering and showing.')
+    mainWindow.center()
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  }, 5000)
+
   mainWindow.once('ready-to-show', () => {
+    clearTimeout(failsafeTimer)
     mainWindow.setIcon(appIcon)
     if (isMaximized) mainWindow.maximize()
     if (!startHidden) {
@@ -227,25 +246,18 @@ function createMainWindow() {
   })
 
   // Remember window size/position (and maximized state) so the app reopens
-  // where the user left it. Bounds are only captured while restored — while
-  // maximized, getBounds() returns the full-screen size, which would become
-  // the "restored" size on the next launch.
+  // where the user left it.  saveWindowState() (from windowManager) only
+  // captures bounds while restored — maximized getBounds() returns the
+  // full-screen size, which would become the "restored" size on next launch.
   let saveStateTimer = null
-  const captureWindowState = () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return
-    const maximized = mainWindow.isMaximized()
-    const state = { ...store.get('windowState', {}), isMaximized: maximized }
-    if (!maximized) Object.assign(state, mainWindow.getBounds())
-    store.set('windowState', state)
-  }
-  const saveWindowState = () => {
+  const scheduleSave = () => {
     clearTimeout(saveStateTimer)
-    saveStateTimer = setTimeout(captureWindowState, 500)
+    saveStateTimer = setTimeout(() => saveWindowState(mainWindow, store), 500)
   }
-  mainWindow.on('resize', saveWindowState)
-  mainWindow.on('move', saveWindowState)
+  mainWindow.on('resize', scheduleSave)
+  mainWindow.on('move',   scheduleSave)
   mainWindow.on('close', (event) => {
-    captureWindowState()
+    saveWindowState(mainWindow, store)
 
     // The X button minimizes to the tray instead of quitting, like Windows'
     // own Sticky Notes — the app keeps running for Quick Capture and any
@@ -298,6 +310,7 @@ function createFloatingWindow(noteId) {
   if (floatingWindows.has(noteId)) {
     const existing = floatingWindows.get(noteId)
     if (!existing.isDestroyed()) {
+      existing.show()
       existing.focus()
       return
     }
@@ -493,6 +506,12 @@ app.whenReady().then(async () => {
   createMainWindow()
   createTray()
 
+  // Re-validate the main window's position whenever the display configuration
+  // changes — a disconnected monitor or resolution change can leave it off-screen.
+  const onDisplayChange = () => enforceOnScreen(mainWindow, screen)
+  screen.on('display-removed',         onDisplayChange)
+  screen.on('display-metrics-changed', onDisplayChange)
+
   // Global Quick Capture: works system-wide while the app is running,
   // even if the main window isn't focused or visible.
   if (!globalShortcut.register('Alt+Space', toggleQuickCapture)) {
@@ -523,6 +542,8 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  // Mark clean exit so the next launch doesn't trigger crash recovery.
+  store.set('_sessionStarted', false)
 })
 
 app.on('will-quit', () => {
@@ -661,6 +682,15 @@ ipcMain.handle('floating:close', (_, noteId) => {
   const win = floatingWindows.get(noteId)
   if (win && !win.isDestroyed()) win.close()
   return true
+})
+
+ipcMain.handle('floating:setHeight', (_, noteId, height, minH) => {
+  const win = floatingWindows.get(noteId)
+  if (!win || win.isDestroyed()) return
+  const [minW] = win.getMinimumSize()
+  win.setMinimumSize(minW, minH ?? 160)
+  const { x, y, width } = win.getBounds()
+  win.setBounds({ x, y, width, height })
 })
 
 // "Edit" from a sticky note's toolbar — bring the main window to the front

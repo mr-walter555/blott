@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+﻿import { create } from 'zustand'
 import { electronService } from '../services/electronService'
 import { v4 as uuidv4 } from 'uuid'
 import { GUIDE_NOTE_ID, GUIDE_NOTE_VERSION, makeGuideNote } from '../utils/guideNote'
@@ -202,7 +202,7 @@ export const useNotesStore = create((set, get) => ({
     const all = Object.values(get().notes)
     let list = all
 
-    if (view === 'trash') return list.filter(n => n.trashed)
+    if (view === 'Trash2') return list.filter(n => n.trashed)
     if (view === 'archived') return list.filter(n => n.archived && !n.trashed)
     if (view === 'favorites') list = list.filter(n => n.favorite && !n.trashed && !n.archived)
     else if (view === 'pinned') list = list.filter(n => n.pinned && !n.trashed && !n.archived)

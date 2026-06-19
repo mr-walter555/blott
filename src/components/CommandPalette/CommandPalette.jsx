@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+﻿import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   MagnifyingGlass, FileText, Plus, Star, PushPin as PushPinRaw, Archive, Trash,
   GearSix, Sun, Moon, Desktop, Sparkle, ArrowSquareOut
 } from '@phosphor-icons/react'
 
-const PushPin = (props) => <PushPinRaw {...props} style={{ ...props.style, transform: 'rotate(-45deg)' }} />
+const Pin = (props) => <PushPinRaw {...props} style={{ ...props.style, transform: 'rotate(-45deg)' }} />
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import { stripHtml } from '../../utils/helpers'
@@ -14,17 +14,17 @@ import { useFocusTrap } from '../../hooks/useFocusTrap'
 import EmptyState from '../common/EmptyState'
 
 const STATIC_COMMAND_DEFS = [
-  { id: 'new-note',        label: 'New Note',      icon: Plus,     category: 'Actions'  },
-  { id: 'ask-ai',          label: 'Ask your notes', icon: Sparkle, category: 'Actions'  },
-  { id: 'view-all',        label: 'All Notes',     icon: FileText, category: 'Navigate' },
-  { id: 'view-favorites',  label: 'Favorites',     icon: Star,     category: 'Navigate' },
-  { id: 'view-pinned',     label: 'Pinned',        icon: PushPin,  category: 'Navigate' },
-  { id: 'view-archived',   label: 'Archived',      icon: Archive,  category: 'Navigate' },
-  { id: 'view-trash',      label: 'Trash',         icon: Trash,    category: 'Navigate' },
-  { id: 'settings',        label: 'Open Settings', icon: GearSix,  category: 'Actions'  },
-  { id: 'theme-light',     label: 'Light Theme',   icon: Sun,      category: 'Theme'    },
-  { id: 'theme-dark',      label: 'Dark Theme',    icon: Moon,     category: 'Theme'    },
-  { id: 'theme-system',    label: 'System Theme',  icon: Desktop,  category: 'Theme'    },
+  { id: 'new-note',        label: 'New Note',      icon: Plus,       category: 'Actions'  },
+  { id: 'ask-ai',          label: 'Ask your notes', icon: Sparkle,   category: 'Actions'  },
+  { id: 'view-all',        label: 'All Notes',     icon: FileText,   category: 'Navigate' },
+  { id: 'view-favorites',  label: 'Favorites',     icon: Star,       category: 'Navigate' },
+  { id: 'view-pinned',     label: 'Pinned',        icon: Pin,        category: 'Navigate' },
+  { id: 'view-archived',   label: 'Archived',      icon: Archive,    category: 'Navigate' },
+  { id: 'view-trash',      label: 'Trash',         icon: Trash,      category: 'Navigate' },
+  { id: 'settings',        label: 'Open Settings', icon: GearSix,    category: 'Actions'  },
+  { id: 'theme-light',     label: 'Light Theme',   icon: Sun,        category: 'Theme'    },
+  { id: 'theme-dark',      label: 'Dark Theme',    icon: Moon,       category: 'Theme'    },
+  { id: 'theme-system',    label: 'System Theme',  icon: Desktop,    category: 'Theme'    },
 ]
 
 export default function CommandPalette() {
@@ -50,7 +50,7 @@ export default function CommandPalette() {
           : def.id === 'view-favorites' ? () => openNotesList('favorites')
           : def.id === 'view-pinned'    ? () => openNotesList('pinned')
           : def.id === 'view-archived'  ? () => openNotesList('archived')
-          : def.id === 'view-trash'     ? () => openNotesList('trash')
+          : def.id === 'view-trash'      ? () => openNotesList('trash')
           : def.id === 'ask-ai'         ? () => openAskAI()
           : def.id === 'settings'       ? () => openSettings()
           : def.id === 'theme-light'    ? () => setTheme('light')
@@ -149,9 +149,9 @@ export default function CommandPalette() {
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search notes, commands…"
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-muted"
             />
-            <kbd className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 rounded px-1.5 py-0.5 font-mono">Esc</kbd>
+            <kbd className="text-xs text-muted bg-gray-100 dark:bg-gray-800 rounded px-1.5 py-0.5 font-mono">Esc</kbd>
           </div>
 
           {/* Results */}
@@ -175,14 +175,14 @@ export default function CommandPalette() {
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left ${
                           isSelected
                             ? 'bg-brown-50 dark:bg-brown-950/40 text-brown-600 dark:text-brown-400'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
+                            : 'text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                         }`}
                       >
                         <item.icon className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
                         <div className="flex-1 min-w-0">
                           <span className="font-medium">{item.label}</span>
                           {item.description && (
-                            <p className="text-xs text-gray-400 truncate mt-0.5">{item.description}</p>
+                            <p className="text-xs text-muted truncate mt-0.5">{item.description}</p>
                           )}
                         </div>
                       </button>
@@ -194,7 +194,7 @@ export default function CommandPalette() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400">
+          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-muted">
             <div className="flex items-center gap-4">
               <span><kbd className="font-mono">↑↓</kbd> navigate</span>
               <span><kbd className="font-mono">↵</kbd> select</span>

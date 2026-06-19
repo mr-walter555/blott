@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'react-hot-toast'
 import { X } from '@phosphor-icons/react'
@@ -32,13 +32,13 @@ function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondary
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</p>
         <button
           onClick={() => toast.dismiss(t.id)}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 -m-1 p-1 rounded-md transition-colors"
+          className="text-muted hover:text-gray-600 dark:hover:text-gray-200 -m-1 p-1 rounded-md transition-colors"
           aria-label="Dismiss"
         >
           <X size={14} />
         </button>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+      <p className="text-xs text-muted mt-1">{description}</p>
       {progress != null && (
         <div className="mt-3 h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
           <div
@@ -57,7 +57,7 @@ function UpdateToast({ t, title, description, primaryLabel, onPrimary, secondary
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+            className="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-muted text-xs font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
             {secondaryLabel}
           </button>
@@ -215,10 +215,10 @@ export default function App() {
       <AnimatePresence>
         {commandPaletteOpen && <CommandPalette key="cmd-palette" />}
         {settingsOpen && <SettingsModal key="settings" />}
-        {notesListView === 'trash' && (
-          <TrashModal key="trash-modal" anchorY={96} onClose={closeNotesList} />
+        {notesListView === 'Trash2' && (
+          <TrashModal key="Trash2-modal" anchorY={96} onClose={closeNotesList} />
         )}
-        {notesListView && notesListView !== 'trash' && (
+        {notesListView && notesListView !== 'Trash2' && (
           <NotesListModal key="notes-list" view={notesListView} onClose={closeNotesList} />
         )}
         {whatsNew && (

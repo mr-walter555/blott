@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { Plus, DotsThree, Pencil, Trash, X } from '@phosphor-icons/react'
+﻿import { useState, useRef, useEffect } from 'react'
+import { Plus, DotsThree, PencilSimple, Trash, X } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import DropdownMenu from '../common/DropdownMenu'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -75,13 +75,13 @@ export default function WorkspaceSection() {
     <div className="space-y-0.5 px-0 py-1">
       {workspaces.map(ws => (
         <div key={ws.id} className="group relative">
-          <button
+          <div
             onClick={e => setWsModal({ workspace: ws, anchorY: e.currentTarget.getBoundingClientRect().top })}
-            className="sidebar-item w-full"
+            className="sidebar-item w-full cursor-pointer"
           >
             <WorkspaceAvatar name={ws.name} color={ws.color} />
             <span className="flex-1 text-left truncate">{ws.name}</span>
-            <span className="text-xs text-gray-400 dark:text-gray-600">
+            <span className="text-xs text-muted dark:text-gray-600">
               {getNoteCount(ws.id) || ''}
             </span>
             <button
@@ -92,14 +92,14 @@ export default function WorkspaceSection() {
               }}
               className="opacity-20 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/[0.1] transition-all"
             >
-              <DotsThree className="w-4 h-4 text-black dark:text-white" weight="bold" />
+              <DotsThree className="w-4 h-4 text-black dark:text-white" />
             </button>
-          </button>
+          </div>
 
           <DropdownMenu anchor={menuTriggerRef} open={menuId === ws.id} onClose={() => setMenuId(null)} align="right">
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 w-36">
-              <button onClick={() => openRename(ws)} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/[0.06] text-gray-700 dark:text-gray-300">
-                <Pencil className="w-4 h-4" weight="duotone" /> Rename
+              <button onClick={() => openRename(ws)} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/[0.06] text-gray-700 dark:text-muted">
+                <PencilSimple className="w-4 h-4" /> Rename
               </button>
               <button
                 onClick={() => { setConfirmWorkspace(ws); setMenuId(null) }}
@@ -114,7 +114,7 @@ export default function WorkspaceSection() {
 
       <button
         onClick={openCreate}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-muted dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-600 dark:hover:text-muted transition-colors"
       >
         <Plus className="w-3.5 h-3.5 flex-shrink-0" />
         Add workspace
@@ -172,10 +172,10 @@ function WorkspaceDeleteModal({ workspace, onConfirm, onCancel }) {
         >
           <div className="flex flex-col items-center px-7 pt-8 pb-6 text-center">
             <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-4">
-              <Trash className="w-7 h-7 text-red-500" weight="fill" />
+              <Trash className="w-7 h-7 text-red-500" />
             </div>
             <h3 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete workspace?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-sm text-muted leading-relaxed">
               <span className="font-medium text-gray-700 dark:text-gray-200">"{workspace.name}"</span> will be deleted. Notes inside will not be removed.
             </p>
           </div>
@@ -183,7 +183,7 @@ function WorkspaceDeleteModal({ workspace, onConfirm, onCancel }) {
           <div className="flex items-center gap-2.5 px-5 pb-6">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] font-medium transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] font-medium transition-colors"
             >
               Cancel
             </button>
@@ -236,14 +236,14 @@ function WorkspaceModal({ mode, initial, onSave, onClose }) {
               {mode === 'create' ? 'New Workspace' : 'Edit Workspace'}
             </h2>
             <button onClick={onClose} className="btn-icon">
-              <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <X className="w-4 h-4 text-muted" />
             </button>
           </div>
 
           <div className="px-5 py-5 space-y-4">
             {/* Preview + Name */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Name</label>
+              <label className="block text-xs font-medium text-muted mb-1.5">Name</label>
               <div className="flex items-center gap-3 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-brown-400/30 dark:focus-within:ring-brown-500/20 focus-within:border-brown-300 dark:focus-within:border-brown-500 transition-all">
                 <WorkspaceAvatar name={name || '?'} color={color} size="lg" />
                 <input
@@ -252,14 +252,14 @@ function WorkspaceModal({ mode, initial, onSave, onClose }) {
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submit() } }}
                   placeholder="Workspace name"
-                  className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                  className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-muted dark:placeholder:text-gray-600"
                 />
               </div>
             </div>
 
             {/* Color picker */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Color</label>
+              <label className="block text-xs font-medium text-muted mb-2">Color</label>
               <div className="flex items-center gap-2 flex-wrap">
                 {PALETTE.map(c => (
                   <button
@@ -278,22 +278,22 @@ function WorkspaceModal({ mode, initial, onSave, onClose }) {
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                Description <span className="text-gray-400 dark:text-gray-600 font-normal">(optional)</span>
+              <label className="block text-xs font-medium text-muted mb-1.5">
+                Description <span className="text-muted dark:text-gray-600 font-normal">(optional)</span>
               </label>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What is this workspace for?"
                 rows={3}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brown-400/30 dark:focus:ring-brown-500/20 focus:border-brown-300 dark:focus:border-brown-500 transition-all bg-transparent"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-muted dark:placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brown-400/30 dark:focus:ring-brown-500/20 focus:border-brown-300 dark:focus:border-brown-500 transition-all bg-transparent"
               />
             </div>
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800">
-            <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
+            <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg text-gray-600 dark:text-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
             <button

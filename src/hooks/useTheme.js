@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useUIStore } from '../store/uiStore'
 import { electronService } from '../services/electronService'
 
@@ -15,7 +15,7 @@ export function useTheme() {
   const applySettings = useUIStore(s => s.applySettings)
 
   // Load the persisted theme choice once on mount — settings live in
-  // electron-store inside the desktop app, localStorage in the browser
+  // electron-store inside the Monitor app, localStorage in the browser
   // (mirrors the two branches SettingsModal.handleSave writes to)
   useEffect(() => {
     if (electronService.isElectron) {

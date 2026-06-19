@@ -5,9 +5,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Geist Variable', 'sans-serif'],
+        sans: ['Google Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
+        muted: '#8e8b86',
         // Neutral near-black scale for dark mode — replaces Tailwind's default
         // blue-tinted 800/900 so surfaces read as true black with subtle
         // elevation layers (body < sidebar < cards/modals < hover/inputs)
@@ -55,6 +56,7 @@ export default {
     },
   },
   safelist: [
+    { pattern: /^(bg|text|border|ring|fill|stroke)-muted$/, variants: ['hover', 'focus', 'dark', 'placeholder'] },
     {
       pattern: /^(bg|text|border|ring)-brown-/,
       variants: ['hover', 'focus', 'dark', 'dark:hover', 'focus-within'],

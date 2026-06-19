@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+﻿import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { MagnifyingGlass, FileText, Star, PushPin as PushPinRaw, Archive, X } from '@phosphor-icons/react'
 import { useNotesStore } from '../../store/notesStore'
@@ -51,24 +51,24 @@ export default function NotesListModal({ view, onClose }) {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
               <div className="flex items-center gap-2">
-                <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <Icon className="w-4 h-4 text-muted" />
                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{meta.title}</span>
               </div>
               <button onClick={onClose} className="btn-icon" aria-label="Close">
-                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <X className="w-4 h-4 text-muted" />
               </button>
             </div>
 
             {/* Search */}
             <div className="px-3 pt-3 pb-2 flex-shrink-0">
               <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-brown-400 dark:focus-within:border-brown-500 rounded-lg transition-colors">
-                <MagnifyingGlass className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                <MagnifyingGlass className="w-4 h-4 text-muted flex-shrink-0" />
                 <input
                   ref={inputRef}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder={`Search ${meta.title.toLowerCase()}…`}
-                  className="flex-1 text-sm outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 bg-transparent"
+                  className="flex-1 text-sm outline-none text-gray-700 dark:text-gray-200 placeholder:text-muted dark:placeholder:text-gray-600 bg-transparent"
                 />
               </div>
             </div>
@@ -84,7 +84,7 @@ export default function NotesListModal({ view, onClose }) {
                     onClick={() => { setSelectedNote(note.id); onClose() }}
                     className="w-full flex items-center gap-2.5 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                   >
-                    <FileText className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                    <FileText className="w-4 h-4 text-muted flex-shrink-0" />
                     <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{note.title || 'Untitled'}</span>
                   </button>
                 ))
@@ -93,7 +93,7 @@ export default function NotesListModal({ view, onClose }) {
 
             {/* Footer */}
             <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
-              <p className="text-xs text-gray-400 dark:text-gray-600">{notes.length} {notes.length === 1 ? 'note' : 'notes'}</p>
+              <p className="text-xs text-muted dark:text-gray-600">{notes.length} {notes.length === 1 ? 'note' : 'notes'}</p>
             </div>
           </div>
         </motion.div>

@@ -1,4 +1,4 @@
-// Short, hand-written list of highlights shown once in the in-app "What's new"
+﻿// Short, hand-written list of highlights shown once in the in-app "What's new"
 // modal after an update. Kept separate from the GitHub release notes, which are
 // written for the releases page (download tables, SmartScreen instructions,
 // contributor avatars) and aren't meant for a small in-app dialog.
@@ -11,7 +11,7 @@ export const WHATS_NEW_ITEMS = [
   {
     icon: AppWindow,
     title: 'Fresh new look',
-    description: 'Custom title bar, Geist font, and a tighter editor column — the app feels more at home on your desktop.',
+    description: 'Custom title bar, Geist font, and a tighter editor column — the app feels more at home on your Monitor.',
   },
   {
     icon: FileArrowDown,
@@ -25,7 +25,7 @@ export const WHATS_NEW_ITEMS = [
   },
   {
     icon: Bell,
-    title: 'Desktop notifications',
+    title: 'Monitor notifications',
     description: 'Quick Capture and update alerts now show native OS notifications when Smart Notepad is in the background.',
   },
 ]

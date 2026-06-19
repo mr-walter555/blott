@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+﻿import { useState, useMemo, useEffect, useRef } from 'react'
 import { MagnifyingGlass, Plus, FileText, X } from '@phosphor-icons/react'
 import { useNotesStore } from '../../store/notesStore'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
@@ -66,12 +66,12 @@ export default function WorkspaceNotesModal({ workspace, anchorY, onClose }) {
           </div>
           <div className="flex items-center gap-1">
             <button onClick={handleNewNote}
-              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.08] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.08] text-muted hover:text-gray-600 dark:hover:text-muted transition-colors"
               title="New note in workspace" aria-label="New note in workspace">
               <Plus className="w-4 h-4" />
             </button>
             <button onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.08] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.08] text-muted hover:text-gray-600 dark:hover:text-muted transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -80,13 +80,13 @@ export default function WorkspaceNotesModal({ workspace, anchorY, onClose }) {
         {/* Search */}
         <div className="px-3 pb-2 flex-shrink-0">
           <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-white/[0.06] rounded-lg">
-            <MagnifyingGlass className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+            <MagnifyingGlass className="w-3.5 h-3.5 text-muted flex-shrink-0" />
             <input
               ref={inputRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search in workspace…"
-              className="flex-1 text-sm outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 bg-transparent"
+              className="flex-1 text-sm outline-none text-gray-700 dark:text-gray-200 placeholder:text-muted dark:placeholder:text-gray-600 bg-transparent"
             />
           </div>
         </div>
@@ -116,9 +116,9 @@ export default function WorkspaceNotesModal({ workspace, anchorY, onClose }) {
                   note.id === selectedNoteId ? 'bg-gray-100 dark:bg-white/[0.08]' : 'hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                 }`}
               >
-                <FileText className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                <FileText className="w-4 h-4 text-muted flex-shrink-0" />
                 <span className={`text-sm truncate ${
-                  note.id === selectedNoteId ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-600 dark:text-gray-400'
+                  note.id === selectedNoteId ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-600 dark:text-muted'
                 }`}>
                   {note.title || 'Untitled'}
                 </span>
@@ -129,7 +129,7 @@ export default function WorkspaceNotesModal({ workspace, anchorY, onClose }) {
 
         {/* Footer */}
         <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <p className="text-xs text-gray-400 dark:text-gray-600">{notes.length} {notes.length === 1 ? 'note' : 'notes'} in workspace</p>
+          <p className="text-xs text-muted dark:text-gray-600">{notes.length} {notes.length === 1 ? 'note' : 'notes'} in workspace</p>
         </div>
       </div>
     </>

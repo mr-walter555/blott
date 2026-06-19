@@ -1,6 +1,6 @@
 import {
   TextB, TextItalic, TextUnderline, TextStrikethrough,
-  TextHOne, TextHTwo, TextHThree, List, ListNumbers,
+  TextHOne, TextHTwo, TextHThree, ListBullets, ListNumbers,
   CheckSquare, Quotes, Code, CodeBlock, Link, Highlighter,
   ArrowCounterClockwise, ArrowClockwise, Minus, Image,
   TextAlignLeft, TextAlignCenter, TextAlignRight, TextAlignJustify
@@ -47,7 +47,7 @@ export default function EditorToolbar({ editor }) {
       className={`p-2 rounded-md text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
         active
           ? 'bg-brown-100 dark:bg-brown-950/60 text-brown-600 dark:text-brown-400'
-          : 'text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-300'
+          : 'text-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-muted'
       }`}
     >
       {children}
@@ -126,7 +126,7 @@ export default function EditorToolbar({ editor }) {
       <Divider />
 
       <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List">
-        <List className="w-5 h-5 text-black dark:text-white" />
+        <ListBullets className="w-5 h-5 text-black dark:text-white" />
       </ToolBtn>
       <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered List">
         <ListNumbers className="w-5 h-5 text-black dark:text-white" />
@@ -161,7 +161,7 @@ export default function EditorToolbar({ editor }) {
       <label
         title="Insert Image(s)"
         aria-label="Insert Image(s)"
-        className="p-2 rounded-md text-sm transition-colors cursor-pointer text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-300"
+        className="p-2 rounded-md text-sm transition-colors cursor-pointer text-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-muted"
       >
         <Image className="w-5 h-5 text-black dark:text-white" />
         <input type="file" accept="image/*" multiple className="hidden" onChange={insertImages} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -14,7 +14,7 @@ import Color from '@tiptap/extension-color'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { createLowlight, common } from 'lowlight'
 import ResizableImage from '../components/Editor/extensions/ResizableImage'
-import { X, PencilSimple } from '@phosphor-icons/react'
+import { X, Minus, CaretDown, PencilSimple, Palette } from '@phosphor-icons/react'
 import { useNotesStore } from '../store/notesStore'
 import { useTheme } from '../hooks/useTheme'
 import { NOTE_COLORS } from '../utils/noteColors'
@@ -45,6 +45,11 @@ export default function StickyNote({ noteId }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [hydrated, setHydrated] = useState(false)
+  const [colorPickerOpen, setColorPickerOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [expandedHeight, setExpandedHeight] = useState(320)
+
+  const HEADER_HEIGHT = 64
 
   useEffect(() => {
     initNotes()
@@ -150,13 +155,28 @@ export default function StickyNote({ noteId }) {
 
   if (!note) {
     return (
-      <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900 text-gray-400">
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900 text-muted">
         <div className="animate-spin w-5 h-5 border-2 border-brown-500 border-t-transparent rounded-full" />
       </div>
     )
   }
 
   const colorInfo = NOTE_COLORS[note.color] || NOTE_COLORS.default
+  const bgClass = colorInfo.card
+    ? `${colorInfo.card} ${colorInfo.cardDark}`
+    : 'bg-white dark:bg-gray-900'
+
+  const handleCollapse = () => {
+    if (isCollapsed) {
+      window.electronAPI?.floating?.setHeight(noteId, expandedHeight, 160)
+      setIsCollapsed(false)
+    } else {
+      setExpandedHeight(window.innerHeight)
+      window.electronAPI?.floating?.setHeight(noteId, HEADER_HEIGHT, HEADER_HEIGHT)
+      setColorPickerOpen(false)
+      setIsCollapsed(true)
+    }
+  }
 
   const handleClose = () => {
     if (window.electronAPI?.floating) {
@@ -172,6 +192,11 @@ export default function StickyNote({ noteId }) {
     }
   }
 
+  const handleColorChange = (colorKey) => {
+    updateNote(noteId, { color: colorKey })
+    setColorPickerOpen(false)
+  }
+
   const handleTitleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === 'ArrowDown') {
       e.preventDefault()
@@ -180,7 +205,7 @@ export default function StickyNote({ noteId }) {
   }
 
   return (
-    <div className="h-screen flex flex-col rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+    <div className={`h-screen flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800 ${bgClass}`}>
       {/* Header — drag region */}
       <div
         className="flex items-start gap-2 px-4 pt-3.5 pb-2 cursor-grab active:cursor-grabbing select-none"
@@ -200,13 +225,16 @@ export default function StickyNote({ noteId }) {
             onKeyDown={handleTitleKeyDown}
             placeholder="Untitled"
             style={{ WebkitAppRegion: 'no-drag' }}
-            className="w-full text-sm font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 truncate"
+            className="w-full text-sm font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-muted dark:placeholder:text-gray-700 truncate"
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Last update: {formatDate(note.updatedAt)}
           </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' }}>
+          <button onClick={handleCollapse} className="btn-icon" title={isCollapsed ? 'Expand' : 'Collapse'} aria-label={isCollapsed ? 'Expand' : 'Collapse'}>
+            {isCollapsed ? <CaretDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+          </button>
           <button onClick={handleClose} className="btn-icon" title="Close" aria-label="Close">
             <X className="w-4 h-4" />
           </button>
@@ -214,21 +242,56 @@ export default function StickyNote({ noteId }) {
       </div>
 
       {/* Content — directly editable */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 text-xs">
-        <div className="tiptap-editor">
-          <EditorContent editor={editor} />
+      {!isCollapsed && (
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 text-xs">
+          <div className="tiptap-editor">
+            <EditorContent editor={editor} />
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Color picker panel — shown inline above toolbar */}
+      {!isCollapsed && colorPickerOpen && (
+        <div
+          className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800"
+          style={{ WebkitAppRegion: 'no-drag' }}
+        >
+          <div className="grid grid-cols-5 gap-1.5">
+            {Object.entries(NOTE_COLORS).map(([key, color]) => (
+              <button
+                key={key}
+                onClick={() => handleColorChange(key)}
+                className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                  (note.color || 'default') === key
+                    ? 'border-gray-500 dark:border-gray-300 scale-110'
+                    : 'border-gray-200 dark:border-gray-600'
+                }`}
+                style={{ background: color.swatch || '#f9fafb' }}
+                title={color.label}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Toolbar */}
-      <div
+      {!isCollapsed && <div
         className="flex items-center px-4 py-2.5 border-t border-gray-100 dark:border-gray-800"
         style={{ WebkitAppRegion: 'no-drag' }}
       >
         <button onClick={handleEdit} className="btn-icon" title="Edit in main editor" aria-label="Edit note">
           <PencilSimple className="w-4 h-4" />
         </button>
-      </div>
+        <div className="flex-1" />
+        <button
+          onClick={() => setColorPickerOpen(o => !o)}
+          className={`btn-icon ${colorPickerOpen ? 'text-brown-500 dark:text-brown-400' : ''}`}
+          title="Note color"
+          aria-label="Note color"
+        >
+          <Palette className="w-4 h-4" />
+        </button>
+      </div>}
     </div>
   )
 }

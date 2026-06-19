@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash, DownloadSimple, Info, FolderOpen } from '@phosphor-icons/react'
+import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash, DownloadSimple, Info, FolderOpen, PlugsConnected } from '@phosphor-icons/react'
 import { useUIStore, FONT_FAMILIES } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import { electronService } from '../../services/electronService'
@@ -12,26 +12,72 @@ const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'editor', label: 'Editor', icon: TextT },
   { id: 'ai', label: 'AI', icon: Robot },
+  { id: 'integrations', label: 'Integrations', icon: PlugsConnected },
   { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
   { id: 'data', label: 'Data', icon: Database },
   { id: 'about', label: 'About', icon: Info },
 ]
 
+const INTEGRATIONS = [
+  {
+    id: 'google-drive',
+    name: 'Google Drive',
+    description: 'Sync and back up your notes automatically to Google Drive.',
+    logo: '🔵',
+    status: 'coming-soon',
+  },
+  {
+    id: 'notion',
+    name: 'Notion',
+    description: 'Import pages from Notion or export notes as Notion pages.',
+    logo: '⬛',
+    status: 'coming-soon',
+  },
+  {
+    id: 'slack',
+    name: 'Slack',
+    description: 'Send notes or snippets directly to a Slack channel.',
+    logo: '💬',
+    status: 'coming-soon',
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description: 'Connect Smart Notepad to 6,000+ apps via Zapier webhooks.',
+    logo: '⚡',
+    status: 'coming-soon',
+  },
+  {
+    id: 'google-calendar',
+    name: 'Google Calendar',
+    description: 'Attach notes to calendar events and see upcoming tasks.',
+    logo: '📅',
+    status: 'coming-soon',
+  },
+  {
+    id: 'github',
+    name: 'GitHub',
+    description: 'Save notes as Gists or link notes to issues and pull requests.',
+    logo: '🐙',
+    status: 'coming-soon',
+  },
+]
+
 const AI_STATUS_META = {
-  checking:     { label: 'Checking…',         pill: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',          dot: 'bg-gray-400' },
+  checking:     { label: 'Checking…',         pill: 'bg-gray-100 dark:bg-gray-800 text-muted',          dot: 'bg-gray-400' },
   connected:    { label: 'Connected',         pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400',    dot: 'bg-green-500' },
   unconfigured: { label: 'Not configured',    pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400',    dot: 'bg-amber-500' },
   error:        { label: 'Backend unreachable', pill: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',          dot: 'bg-red-500' },
 }
 
 const UPDATE_STATUS_META = {
-  checking:       { label: 'Checking…',       pill: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',       dot: 'bg-gray-400' },
+  checking:       { label: 'Checking…',       pill: 'bg-gray-100 dark:bg-gray-800 text-muted',       dot: 'bg-gray-400' },
   'not-available': { label: 'Up to date',     pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400', dot: 'bg-green-500' },
   available:      { label: 'Update available', pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
   downloading:    { label: 'Downloading…',     pill: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
   downloaded:     { label: 'Ready to install', pill: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400', dot: 'bg-green-500' },
   error:          { label: 'Check failed',     pill: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',        dot: 'bg-red-500' },
-  dev:            { label: 'Dev build',        pill: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',      dot: 'bg-gray-400' },
+  dev:            { label: 'Dev build',        pill: 'bg-gray-100 dark:bg-gray-800 text-muted',      dot: 'bg-gray-400' },
 }
 
 const SHORTCUTS = [
@@ -199,7 +245,7 @@ export default function SettingsModal() {
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <motion.div
         {...MODAL_CONTENT}
-        className="pointer-events-auto w-full max-w-2xl h-[min(75vh,600px)] flex flex-col"
+        className="pointer-events-auto w-full max-w-xl h-[min(75vh,600px)] flex flex-col"
       >
         <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full">
           {/* Header */}
@@ -220,7 +266,7 @@ export default function SettingsModal() {
                   className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors ${
                     activeSection === id
                       ? 'text-brown-600 dark:text-brown-400 bg-brown-50 dark:bg-brown-950/40'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
+                      : 'text-gray-600 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -249,7 +295,7 @@ export default function SettingsModal() {
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
                             theme === t
                               ? 'bg-brown-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
                           {t}
@@ -271,7 +317,7 @@ export default function SettingsModal() {
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
                             fontSize === s
                               ? 'bg-brown-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
                           {s}
@@ -290,7 +336,7 @@ export default function SettingsModal() {
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                             fontFamily === id
                               ? 'bg-brown-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
                           {label}
@@ -308,7 +354,7 @@ export default function SettingsModal() {
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                             autoSaveInterval === opt.value
                               ? 'bg-brown-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
                           {opt.label}
@@ -336,7 +382,7 @@ export default function SettingsModal() {
                             type="button"
                             onClick={() => setApiKeyVisible(v => !v)}
                             aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-gray-600 dark:hover:text-muted"
                           >
                             {apiKeyVisible ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -390,12 +436,38 @@ export default function SettingsModal() {
                 </>
               )}
 
+              {activeSection === 'integrations' && (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted">Connect Smart Notepad with your favourite tools. More integrations coming soon.</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {INTEGRATIONS.map(({ id, name, description, logo, status }) => (
+                      <div key={id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
+                        <span className="text-2xl flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">{logo}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{name}</p>
+                          <p className="text-xs text-muted mt-0.5 leading-relaxed">{description}</p>
+                        </div>
+                        {status === 'coming-soon' ? (
+                          <span className="flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-muted">
+                            Coming soon
+                          </span>
+                        ) : (
+                          <button className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-brown-600 hover:bg-brown-700 text-white transition-colors">
+                            Connect
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {activeSection === 'shortcuts' && (
                 <div className="space-y-1">
                   {SHORTCUTS.map(({ keys, action }) => (
                     <div key={keys} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{action}</span>
-                      <kbd className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-lg">
+                      <span className="text-sm text-gray-600 dark:text-muted">{action}</span>
+                      <kbd className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted px-2 py-1 rounded-lg">
                         {keys}
                       </kbd>
                     </div>
@@ -417,7 +489,7 @@ export default function SettingsModal() {
                   <SettingRow label="Export Notes" description="Download a backup of every note as a single JSON file">
                     <button
                       onClick={handleExportAll}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                     >
                       <DownloadSimple className="w-4 h-4" />
                       Export All Notes
@@ -444,7 +516,7 @@ export default function SettingsModal() {
               {activeSection === 'about' && (
                 <>
                   <SettingRow label="Version" description="Smart Notepad">
-                    <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                    <span className="text-sm text-gray-600 dark:text-muted font-mono">
                       {electronService.isElectron ? (appInfo?.version ? `v${appInfo.version}` : 'Loading…') : 'Browser'}
                     </span>
                   </SettingRow>
@@ -507,7 +579,7 @@ export default function SettingsModal() {
                       <SettingRow label="Data Folder" description="Where your encrypted notes are stored on disk">
                         <button
                           onClick={openDataFolder}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                         >
                           <FolderOpen className="w-4 h-4" />
                           Open Folder
@@ -531,7 +603,7 @@ function SettingRow({ label, description, children }) {
     <div className="space-y-2">
       <div>
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</p>
-        {description && <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{description}</p>}
+        {description && <p className="text-xs text-muted mt-0.5">{description}</p>}
       </div>
       {children}
     </div>

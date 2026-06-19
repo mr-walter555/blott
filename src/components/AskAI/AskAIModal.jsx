@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+﻿import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
@@ -43,7 +43,7 @@ function getCurrentVersion(turn) {
 
 // Builds the { question, answer } pairs sent as conversation context for
 // follow-up questions, using each turn's currently displayed version.
-function toHistoryPayload(thread) {
+function toClockCounterClockwisePayload(thread) {
   return thread
     .filter(t => !t.error)
     .map(t => ({ question: t.question, answer: getCurrentVersion(t).answer }))
@@ -88,13 +88,13 @@ function CodeBlock({ language, code }) {
   return (
     <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500">{language || 'text'}</span>
+        <span className="text-[11px] font-mono text-muted">{language || 'text'}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="flex items-center gap-1 text-[11px] text-muted hover:text-gray-600 dark:hover:text-muted transition-colors"
         >
           {copied
-            ? <Check className="w-3 h-3 text-green-500" weight="bold" />
+            ? <Check className="w-3 h-3 text-green-500" />
             : <Copy className="w-3 h-3" />}
           {copied ? 'Copied' : 'Copy'}
         </button>
@@ -138,7 +138,7 @@ function InlineText({ text, sources, onOpenNote }) {
 }
 
 function AnswerText({ text, sources, onOpenNote }) {
-  const baseText = 'text-sm text-gray-700 dark:text-gray-300 leading-relaxed'
+  const baseText = 'text-sm text-gray-700 dark:text-muted leading-relaxed'
   const segments = splitCodeBlocks(text)
 
   return (
@@ -218,8 +218,8 @@ export default function AskAIModal() {
   const [thread, setThread]       = useState([])
   const [loading, setLoading]     = useState(false)
   const [showJumpToBottom, setShowJumpToBottom] = useState(false)
-  const [history, setHistory]     = useState(() => loadConversations())
-  const [historyOpen, setHistoryOpen]       = useState(false)
+  const [history, setClockCounterClockwise]     = useState(() => loadConversations())
+  const [historyOpen, setClockCounterClockwiseOpen]       = useState(false)
   const [layoutMenuOpen, setLayoutMenuOpen] = useState(false)
   const [editingIndex, setEditingIndex]     = useState(null)
   const [editingText, setEditingText]       = useState('')
@@ -323,7 +323,7 @@ export default function AskAIModal() {
     const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
     let nextThread
     try {
-      const { answer, citedIds } = await askNotes(trimmed, candidates, toHistoryPayload(baseThread))
+      const { answer, citedIds } = await askNotes(trimmed, candidates, toClockCounterClockwisePayload(baseThread))
       const cited = candidates.filter(s => citedIds?.includes(s.id))
       nextThread = [...baseThread, { question: trimmed, versions: [{ answer, sources: candidates, cited, feedback: null }], versionIndex: 0 }]
     } catch (err) {
@@ -332,7 +332,7 @@ export default function AskAIModal() {
       setLoading(false)
     }
     setThread(nextThread)
-    setHistory(saveConversation({ id: conversationId, thread: nextThread }))
+    setClockCounterClockwise(saveConversation({ id: conversationId, thread: nextThread }))
   }
 
   const regenerate = async (index) => {
@@ -345,7 +345,7 @@ export default function AskAIModal() {
     const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
     let nextThread
     try {
-      const { answer, citedIds } = await askNotes(trimmed, candidates, toHistoryPayload(baseThread))
+      const { answer, citedIds } = await askNotes(trimmed, candidates, toClockCounterClockwisePayload(baseThread))
       const cited = candidates.filter(s => citedIds?.includes(s.id))
       const versions = [...(turn.error ? [] : getVersions(turn)), { answer, sources: candidates, cited, feedback: null }]
       nextThread = [...baseThread, { question: trimmed, versions, versionIndex: versions.length - 1 }]
@@ -355,7 +355,7 @@ export default function AskAIModal() {
       setLoading(false)
     }
     setThread(nextThread)
-    setHistory(saveConversation({ id: conversationId, thread: nextThread }))
+    setClockCounterClockwise(saveConversation({ id: conversationId, thread: nextThread }))
   }
 
   const submitEdit = (index, text) => {
@@ -417,7 +417,7 @@ export default function AskAIModal() {
         })
         return { question: t.question, versions: updatedVersions, versionIndex: vi }
       })
-      setHistory(saveConversation({ id: conversationId, thread: next }))
+      setClockCounterClockwise(saveConversation({ id: conversationId, thread: next }))
       return next
     })
     if (!cleared) {
@@ -433,7 +433,7 @@ export default function AskAIModal() {
         const versions = getVersions(t)
         return { question: t.question, versions, versionIndex: Math.max(0, Math.min(vi, versions.length - 1)) }
       })
-      setHistory(saveConversation({ id: conversationId, thread: next }))
+      setClockCounterClockwise(saveConversation({ id: conversationId, thread: next }))
       return next
     })
   }
@@ -442,7 +442,7 @@ export default function AskAIModal() {
     setConversationId(uuidv4())
     setThread([])
     setQuestion('')
-    setHistoryOpen(false)
+    setClockCounterClockwiseOpen(false)
     inputRef.current?.focus()
   }
 
@@ -450,12 +450,12 @@ export default function AskAIModal() {
     setConversationId(conv.id)
     setThread(conv.thread)
     setQuestion('')
-    setHistoryOpen(false)
+    setClockCounterClockwiseOpen(false)
   }
 
   const removeConversation = (e, id) => {
     e.stopPropagation()
-    setHistory(deleteConversation(id))
+    setClockCounterClockwise(deleteConversation(id))
     if (id === conversationId) newConversation()
   }
 
@@ -465,34 +465,34 @@ export default function AskAIModal() {
       {/* Header */}
       <div className="flex items-center justify-between pl-2 pr-2 py-2.5 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         <button
-          onClick={() => setHistoryOpen(o => !o)}
+          onClick={() => setClockCounterClockwiseOpen(o => !o)}
           className="flex items-center gap-1.5 min-w-0 pl-2 pr-2.5 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
         >
           {historyOpen
-            ? <CaretLeft className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-            : <Sparkle className="w-4 h-4 text-brown-500 flex-shrink-0" weight="fill" />}
+            ? <CaretLeft className="w-3.5 h-3.5 text-muted flex-shrink-0" />
+            : <Sparkle className="w-4 h-4 text-brown-500 flex-shrink-0" />}
           <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
             {historyOpen ? 'History' : 'Ask your notes'}
           </h2>
-          {!historyOpen && <CaretDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />}
+          {!historyOpen && <CaretDown className="w-3.5 h-3.5 text-muted flex-shrink-0" />}
         </button>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
-            onClick={() => setHistoryOpen(o => !o)}
+            onClick={() => setClockCounterClockwiseOpen(o => !o)}
             className={`btn-icon ${historyOpen ? 'bg-gray-100 dark:bg-white/[0.08]' : ''}`}
             title="Conversation history"
             aria-label="Conversation history"
           >
-            <ClockCounterClockwise className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <ClockCounterClockwise className="w-4 h-4 text-muted" />
           </button>
           <button onClick={copyTranscript} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="Copy conversation" aria-label="Copy conversation">
             {transcriptCopied
-              ? <Check className="w-4 h-4 text-green-500" weight="bold" />
-              : <Copy className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
+              ? <Check className="w-4 h-4 text-green-500" />
+              : <Copy className="w-4 h-4 text-muted" />}
           </button>
           <button onClick={newConversation} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="New conversation" aria-label="New conversation">
-            <PlusCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <PlusCircle className="w-4 h-4 text-muted" />
           </button>
 
           {/* Layout switcher */}
@@ -503,7 +503,7 @@ export default function AskAIModal() {
               title="Chat layout"
               aria-label="Chat layout"
             >
-              {(() => { const L = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0]; return <L.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" /> })()}
+              {(() => { const L = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0]; return <L.icon className="w-4 h-4 text-muted" /> })()}
             </button>
             <AnimatePresence>
               {layoutMenuOpen && (
@@ -518,11 +518,11 @@ export default function AskAIModal() {
                     <button
                       key={id}
                       onClick={() => chooseLayout(id)}
-                      className="w-full flex items-center gap-3 px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                      className="w-full flex items-center gap-3 px-3.5 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                     >
-                      <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <Icon className="w-4 h-4 text-muted flex-shrink-0" />
                       <span className="flex-1 text-left">{label}</span>
-                      {id === layoutId && <Check className="w-4 h-4 text-brown-500 flex-shrink-0" weight="bold" />}
+                      {id === layoutId && <Check className="w-4 h-4 text-brown-500 flex-shrink-0" />}
                     </button>
                   ))}
                 </motion.div>
@@ -532,7 +532,7 @@ export default function AskAIModal() {
 
           <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
           <button onClick={closeAskAI} className="btn-icon" title="Close" aria-label="Close">
-            <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <X className="w-4 h-4 text-muted" />
           </button>
         </div>
       </div>
@@ -551,8 +551,8 @@ export default function AskAIModal() {
             >
               {history.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center gap-2 px-6">
-                  <ChatCircleText className="w-8 h-8 text-gray-300 dark:text-gray-700" />
-                  <p className="text-sm text-gray-400 dark:text-gray-600">No past conversations yet</p>
+                  <ChatCircleText className="w-8 h-8 text-muted dark:text-gray-700" />
+                  <p className="text-sm text-muted dark:text-gray-600">No past conversations yet</p>
                 </div>
               ) : (
                 <div className="space-y-0.5">
@@ -571,13 +571,13 @@ export default function AskAIModal() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{truncate(conv.title, 56)}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-600">
+                        <p className="text-xs text-muted dark:text-gray-600">
                           {formatDate(conv.updatedAt)} · {conv.thread.length} {conv.thread.length === 1 ? 'message' : 'messages'}
                         </p>
                       </div>
                       <button
                         onClick={(e) => removeConversation(e, conv.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex-shrink-0"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex-shrink-0"
                         title="Delete conversation"
                         aria-label="Delete conversation"
                       >
@@ -601,11 +601,11 @@ export default function AskAIModal() {
                 {thread.length === 0 && !loading && (
                   <div className="h-full flex flex-col items-center justify-center text-center gap-3 px-2">
                     <div className="w-11 h-11 rounded-full bg-brown-50 dark:bg-brown-950/40 flex items-center justify-center">
-                      <Sparkle className="w-5 h-5 text-brown-500" weight="fill" />
+                      <Sparkle className="w-5 h-5 text-brown-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Ask anything about your notes</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+                      <p className="text-sm font-medium text-gray-700 dark:text-muted">Ask anything about your notes</p>
+                      <p className="text-xs text-muted dark:text-gray-600 mt-1">
                         {aiStatus === 'unconfigured'
                           ? 'Connect an AI provider below to get started'
                           : "I'll search what you've written and answer with sources, cited like [1]"}
@@ -626,7 +626,7 @@ export default function AskAIModal() {
                         <div className="rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-brown-200 dark:border-brown-800/70 shadow-sm">
                           {/* Edit-mode label */}
                           <div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
-                            <PencilSimple className="w-3 h-3 text-brown-400 dark:text-brown-500 flex-shrink-0" weight="bold" />
+                            <PencilSimple className="w-3 h-3 text-brown-400 dark:text-brown-500 flex-shrink-0" />
                             <span className="text-[10px] font-semibold tracking-widest uppercase text-brown-400 dark:text-brown-500 select-none">
                               Editing
                             </span>
@@ -649,12 +649,12 @@ export default function AskAIModal() {
                           <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 dark:border-gray-800">
                             <button
                               onClick={() => { setEditingIndex(null); setEditingText('') }}
-                              className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 px-2.5 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                              className="text-xs font-medium text-muted hover:text-gray-600 dark:hover:text-muted px-2.5 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
                             >
                               Cancel
                             </button>
                             <div className="flex items-center gap-2.5">
-                              <span className="text-[11px] text-gray-300 dark:text-gray-700 select-none">⏎ to send</span>
+                              <span className="text-[11px] text-muted dark:text-gray-700 select-none">⏎ to send</span>
                               <button
                                 onClick={() => submitEdit(i, editingText)}
                                 disabled={!editingText.trim()}
@@ -662,7 +662,7 @@ export default function AskAIModal() {
                                 title="Send edit"
                                 aria-label="Send edit"
                               >
-                                <ArrowUp className="w-3.5 h-3.5" weight="bold" />
+                                <ArrowUp className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
@@ -676,7 +676,7 @@ export default function AskAIModal() {
                           title="Edit message"
                           aria-label="Edit message"
                         >
-                          <PencilSimple className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                          <PencilSimple className="w-3 h-3 text-muted" />
                         </button>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-1.5 w-fit max-w-[85%] truncate">
                           {turn.question}
@@ -702,9 +702,9 @@ export default function AskAIModal() {
                                   title="Previous response"
                                   aria-label="Previous response"
                                 >
-                                  <CaretLeft className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                                  <CaretLeft className="w-3 h-3 text-muted" />
                                 </button>
-                                <span className="text-[11px] text-gray-400 dark:text-gray-500 select-none tabular-nums px-0.5">
+                                <span className="text-[11px] text-muted select-none tabular-nums px-0.5">
                                   {vi + 1}/{versions.length}
                                 </span>
                                 <button
@@ -714,17 +714,17 @@ export default function AskAIModal() {
                                   title="Next response"
                                   aria-label="Next response"
                                 >
-                                  <CaretRight className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                                  <CaretRight className="w-3 h-3 text-muted" />
                                 </button>
                               </div>
                             )}
                             <button onClick={() => copyAnswer(i, current.answer)} className="btn-icon !w-7 !h-7" title="Copy answer" aria-label="Copy answer">
                               {copiedIndex === i
-                                ? <Check className="w-3.5 h-3.5 text-green-500" weight="bold" />
-                                : <Copy className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
+                                ? <Check className="w-3.5 h-3.5 text-green-500" />
+                                : <Copy className="w-3.5 h-3.5 text-muted" />}
                             </button>
                             <button onClick={() => addToNote(current.answer)} className="btn-icon !w-7 !h-7" title="Add to note" aria-label="Add to note">
-                              <Plus className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                              <Plus className="w-3.5 h-3.5 text-muted" />
                             </button>
                             <button
                               onClick={() => regenerate(i)}
@@ -733,18 +733,18 @@ export default function AskAIModal() {
                               title="Regenerate response"
                               aria-label="Regenerate response"
                             >
-                              <ArrowClockwise className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                              <ArrowClockwise className="w-3.5 h-3.5 text-muted" />
                             </button>
                             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
                             <button onClick={() => setFeedback(i, 'up')} className="btn-icon !w-7 !h-7" title="Good response" aria-label="Good response">
                               <ThumbsUp
-                                className={`w-3.5 h-3.5 ${current.feedback === 'up' ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`}
+                                className={`w-3.5 h-3.5 ${current.feedback === 'up' ? 'text-brown-500' : 'text-muted'}`}
                                 weight={current.feedback === 'up' ? 'fill' : 'regular'}
                               />
                             </button>
                             <button onClick={() => setFeedback(i, 'down')} className="btn-icon !w-7 !h-7" title="Bad response" aria-label="Bad response">
                               <ThumbsDown
-                                className={`w-3.5 h-3.5 ${current.feedback === 'down' ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`}
+                                className={`w-3.5 h-3.5 ${current.feedback === 'down' ? 'text-brown-500' : 'text-muted'}`}
                                 weight={current.feedback === 'down' ? 'fill' : 'regular'}
                               />
                             </button>
@@ -755,7 +755,7 @@ export default function AskAIModal() {
                                 <button
                                   key={s.id}
                                   onClick={() => openNote(s.id)}
-                                  className="flex items-center gap-1.5 text-xs pl-2 pr-3 py-1 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                                  className="flex items-center gap-1.5 text-xs pl-2 pr-3 py-1 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
                                 >
                                   <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                                   <span className="truncate max-w-[9rem]">{s.title}</span>
@@ -770,7 +770,7 @@ export default function AskAIModal() {
                 ))}
 
                 {loading && (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="flex items-center gap-2 text-sm text-muted">
                     <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                       <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
                       <path d="M12 2a10 10 0 0 0-10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity="0.3"/>
@@ -790,7 +790,7 @@ export default function AskAIModal() {
                   title="Jump to latest"
                   aria-label="Jump to latest"
                 >
-                  <CaretDown className="w-4 h-4" weight="bold" />
+                  <CaretDown className="w-4 h-4" />
                 </motion.button>
               )}
             </motion.div>
@@ -803,7 +803,7 @@ export default function AskAIModal() {
         <div className="px-3 pb-3 pt-1 flex-shrink-0">
           <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-3.5 space-y-2.5">
             <div className="flex items-start gap-2.5">
-              <Key className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" weight="fill" />
+              <Key className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Connect AI to ask your notes</p>
                 {electronService.isElectron ? (
@@ -832,7 +832,7 @@ export default function AskAIModal() {
                     type="button"
                     onClick={() => setApiKeyVisible(v => !v)}
                     aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-gray-600 dark:hover:text-muted"
                   >
                     {apiKeyVisible ? <EyeSlash className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -858,7 +858,7 @@ export default function AskAIModal() {
               <button
                 key={s}
                 onClick={() => ask(s)}
-                className="self-start text-left text-xs px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors whitespace-nowrap"
+                className="self-start text-left text-xs px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors whitespace-nowrap"
               >
                 {s}
               </button>
@@ -878,28 +878,28 @@ export default function AskAIModal() {
               onKeyDown={handleKeyDown}
               placeholder="Do anything with AI…"
               rows={1}
-              className="w-full bg-transparent outline-none resize-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 max-h-24"
+              className="w-full bg-transparent outline-none resize-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-muted dark:placeholder:text-gray-600 max-h-24"
             />
             <div className="flex items-center justify-between mt-1.5">
               <div className="flex items-center gap-1">
                 <button className="btn-icon !w-7 !h-7" title="Add context" aria-label="Add context">
-                  <Plus className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <Plus className="w-4 h-4 text-muted" />
                 </button>
-                <button className="flex items-center gap-1 px-2 h-7 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
+                <button className="flex items-center gap-1 px-2 h-7 rounded-lg text-xs text-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
                   <SlidersHorizontal className="w-3.5 h-3.5" />
                   Auto
                 </button>
               </div>
               <div className="flex items-center gap-0.5">
                 <button className="btn-icon !w-7 !h-7" title="Voice input" aria-label="Voice input">
-                  <Microphone className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <Microphone className="w-4 h-4 text-muted" />
                 </button>
                 <button
                   onClick={() => ask(question)}
                   disabled={!question.trim() || loading}
                   className="flex items-center justify-center w-7 h-7 rounded-lg bg-brown-600 hover:bg-brown-700 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors flex-shrink-0"
                 >
-                  <ArrowUp className="w-4 h-4" weight="bold" />
+                  <ArrowUp className="w-4 h-4" />
                 </button>
               </div>
             </div>

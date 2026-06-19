@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { Sparkle, X } from '@phosphor-icons/react'
 import { useTheme } from '../hooks/useTheme'
@@ -107,10 +107,9 @@ export default function QuickCapture() {
         style={{ WebkitAppRegion: 'drag' }}
       >
         <div className="flex items-center gap-2">
-          <Sparkle className="w-3.5 h-3.5 text-amber-500" weight="fill" />
+          <Sparkle className="w-3.5 h-3.5 text-amber-500" />
           <span
             className="text-xs font-semibold tracking-wide text-amber-800/80 dark:text-amber-400/80"
-            style={{ fontFamily: 'Georgia, serif' }}
           >
             Quick Capture
           </span>
@@ -148,7 +147,7 @@ export default function QuickCapture() {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Capture a quick note…"
-          className="absolute inset-0 resize-none bg-transparent pl-12 pr-4 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none overflow-y-auto"
+          className="absolute inset-0 resize-none bg-transparent pl-12 pr-4 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder:text-muted dark:placeholder:text-gray-600 focus:outline-none overflow-y-auto"
           style={{ WebkitAppRegion: 'no-drag', userSelect: 'text', lineHeight: `${LINE_HEIGHT}px` }}
           autoFocus
         />
@@ -158,7 +157,6 @@ export default function QuickCapture() {
       <div
         ref={footerRef}
         className="px-4 py-1.5 border-t border-amber-200/40 dark:border-amber-900/30 text-[11px] italic text-amber-700/50 dark:text-amber-400/40 select-none"
-        style={{ fontFamily: 'Georgia, serif' }}
       >
         Enter to save · Esc to dismiss
       </div>

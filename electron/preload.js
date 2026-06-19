@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   floating: {
     open: (noteId) => ipcRenderer.invoke('floating:open', noteId),
     close: (noteId) => ipcRenderer.invoke('floating:close', noteId),
+    setHeight: (noteId, height, minH) => ipcRenderer.invoke('floating:setHeight', noteId, height, minH),
     editInMain: (noteId) => ipcRenderer.invoke('floating:editInMain', noteId),
   },
 

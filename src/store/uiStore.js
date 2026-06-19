@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export const FONT_FAMILIES = {
-  geist: { label: 'Geist', value: "'Geist Variable', sans-serif" },
+  'google-sans': { label: 'Sans', value: "'Google Sans', ui-sans-serif, system-ui, sans-serif" },
   serif: { label: 'Serif', value: "Georgia, Cambria, 'Times New Roman', serif" },
   mono:  { label: 'Mono',  value: "ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace" },
 }
@@ -28,7 +28,7 @@ export const useUIStore = create((set, get) => ({
   searchQuery: '',
   fontSize: 'medium',
   autoSaveInterval: 2000,
-  fontFamily: 'geist',
+  fontFamily: 'google-sans',
   focusMode: false,
   updateStatus: null,
 
@@ -64,6 +64,6 @@ export const useUIStore = create((set, get) => ({
     theme: settings.theme ?? 'system',
     fontSize: settings.fontSize ?? 'medium',
     autoSaveInterval: settings.autoSaveInterval ?? 2000,
-    fontFamily: settings.fontFamily ?? 'geist',
+    fontFamily: settings.fontFamily ?? 'google-sans',
   }),
 }))

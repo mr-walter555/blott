@@ -1,7 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import {
   ArrowSquareOut, Trash, Archive,
-  ArrowCounterClockwise, ArrowsOutSimple, FilePdf, FileText as FileMd, DotsThree, BookOpen
+  ArrowCounterClockwise, ArrowsOutSimple, FileArrowDown, FileText as FileMd, DotsThree, BookOpen
 } from '@phosphor-icons/react'
 import { AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -34,13 +34,13 @@ export default function NoteHeader({ note, editor }) {
       <div className="flex items-center justify-between px-8 py-2.5">
 
         {/* Note title */}
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-xs">
+        <p className="text-sm font-medium text-gray-700 dark:text-muted truncate max-w-xs">
           {note.title || 'Untitled'}
         </p>
 
         {/* Meta */}
         <div className="hidden sm:flex items-center gap-3">
-          <span className="text-xs text-gray-400 dark:text-gray-600">Edited {formatDate(note.updatedAt)}</span>
+          <span className="text-xs text-muted dark:text-gray-600">Edited {formatDate(note.updatedAt)}</span>
         </div>
 
         {/* Right actions */}
@@ -50,7 +50,7 @@ export default function NoteHeader({ note, editor }) {
               {/* Export dropdown */}
               <div className="relative">
                 <button onClick={() => setExportOpen(o => !o)} className="btn-icon" title="More options" aria-label="More options">
-                  <DotsThree className="w-5 h-5 text-black dark:text-white" weight="bold" />
+                  <DotsThree className="w-5 h-5 text-black dark:text-white" />
                 </button>
                 {exportOpen && (
                   <div
@@ -63,25 +63,25 @@ export default function NoteHeader({ note, editor }) {
                     <div className="py-1">
                       <button
                         onClick={() => { exportAsPDF(note.title, note.content); setExportOpen(false); toast.success('Exported as PDF') }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                       >
-                        <FilePdf className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <FileArrowDown className="w-4 h-4 text-muted flex-shrink-0" />
                         <span className="whitespace-nowrap">Export as PDF</span>
                       </button>
                       <button
                         onClick={() => { exportAsMarkdown(note.title, note.content); setExportOpen(false); toast.success('Exported as Markdown') }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                       >
-                        <FileMd className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <FileMd className="w-4 h-4 text-muted flex-shrink-0" />
                         <span className="whitespace-nowrap">Export as Markdown</span>
                       </button>
                     </div>
                     <div className="border-t border-gray-100 dark:border-gray-700 py-1">
                       <button
                         onClick={() => { openAsFloating(note.id); setExportOpen(false) }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                       >
-                        <ArrowSquareOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <ArrowSquareOut className="w-4 h-4 text-muted flex-shrink-0" />
                         <span className="whitespace-nowrap">Open as sticky note</span>
                       </button>
                     </div>
@@ -95,7 +95,7 @@ export default function NoteHeader({ note, editor }) {
               <button
                 onClick={() => {
                   archiveNote(note.id, !note.archived)
-                  toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-gray-500" /> })
+                  toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-muted" /> })
                 }}
                 className="btn-icon"
                 title={note.archived ? 'Unarchive' : 'Archive'}
@@ -109,7 +109,7 @@ export default function NoteHeader({ note, editor }) {
                   Guide
                 </span>
               ) : (
-                <button onClick={() => { trashNote(note.id, true); toast('Moved to trash', { icon: '🗑️' }) }} className="btn-icon hover:text-red-500" title="Move to trash" aria-label="Move to trash">
+                <button onClick={() => { trashNote(note.id, true); toast('Moved to Trash', { icon: '🗑️' }) }} className="btn-icon hover:text-red-500" title="Move to Trash" aria-label="Move to Trash">
                   <Trash className="w-5 h-5" />
                 </button>
               )}
@@ -121,7 +121,7 @@ export default function NoteHeader({ note, editor }) {
       {/* Trash banner — note is read-only while trashed */}
       {note.trashed && (
         <div className="flex items-center justify-between gap-3 px-8 py-2 bg-gray-50 dark:bg-white/[0.03]">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-muted">
             This note is in Trash and read-only. It'll be permanently deleted after 30 days.
           </p>
           <div className="flex items-center gap-2 flex-shrink-0">

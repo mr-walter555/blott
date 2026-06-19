@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 
 const MinimizeIcon = () => (
   <svg width="10" height="1" viewBox="0 0 10 1" fill="currentColor">
@@ -49,7 +49,7 @@ export default function TitleBar() {
       >
         <button
           onClick={() => window.electronAPI.window.minimize()}
-          className="flex items-center justify-center w-11 text-gray-500 hover:text-gray-200 hover:bg-white/[0.08] transition-colors"
+          className="flex items-center justify-center w-11 text-muted hover:text-gray-200 hover:bg-white/[0.08] transition-colors"
           tabIndex={-1}
           aria-label="Minimize"
         >
@@ -57,7 +57,7 @@ export default function TitleBar() {
         </button>
         <button
           onClick={() => window.electronAPI.window.maximize()}
-          className="flex items-center justify-center w-11 text-gray-500 hover:text-gray-200 hover:bg-white/[0.08] transition-colors"
+          className="flex items-center justify-center w-11 text-muted hover:text-gray-200 hover:bg-white/[0.08] transition-colors"
           tabIndex={-1}
           aria-label={isMaximized ? 'Restore' : 'Maximize'}
         >
@@ -65,7 +65,7 @@ export default function TitleBar() {
         </button>
         <button
           onClick={() => window.electronAPI.window.close()}
-          className="flex items-center justify-center w-11 text-gray-500 hover:text-white hover:bg-red-600 transition-colors"
+          className="flex items-center justify-center w-11 text-muted hover:text-white hover:bg-red-600 transition-colors"
           tabIndex={-1}
           aria-label="Close"
         >

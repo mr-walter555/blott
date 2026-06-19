@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef } from 'react'
+﻿import { useState, useMemo, useRef } from 'react'
 import {
   GearSix, Plus, SidebarSimple, MagnifyingGlass,
-  CaretDown, CaretRight, FileText, Star, PushPin as PushPinRaw, ListChecks,
-  DotsThree, Trash, PencilSimple, BookOpen, Archive
+  CaretDown, CaretRight, FileText, Star, ListChecks,
+  DotsThree, Trash, PencilSimple, BookOpen, Archive, Question
 } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -12,8 +12,6 @@ import WorkspaceSection from './WorkspaceSection'
 import TrashModal from './TrashModal'
 import EmptyState from '../common/EmptyState'
 import { GUIDE_NOTE_ID } from '../../utils/guideNote'
-
-const PushPin = (props) => <PushPinRaw {...props} style={{ transform: 'rotate(-45deg)' }} />
 
 const labelVariants = {
   visible: { opacity: 1, transition: { duration: 0.15, delay: 0.15 } },
@@ -40,12 +38,10 @@ function FadeLabel({ show, children, className = '' }) {
 }
 
 function NoteIcon({ note }) {
-  if (note.id === GUIDE_NOTE_ID) return <BookOpen className="w-4 h-4 text-amber-500 flex-shrink-0" />
-  if (note.favorite) return <Star className="w-4 h-4 text-yellow-400 flex-shrink-0" weight="fill" />
-  if (note.pinned)   return <PushPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+  if (note.id === GUIDE_NOTE_ID) return <BookOpen className="w-5 h-5 text-amber-500 flex-shrink-0" />
   if (note.content?.includes('data-type="taskList"'))
-    return <ListChecks className="w-4 h-4 text-gray-400 flex-shrink-0" />
-  return <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+    return <ListChecks className="w-5 h-5 text-muted flex-shrink-0" />
+  return <FileText className="w-5 h-5 text-muted flex-shrink-0" />
 }
 
 function noteSnippet(note) {
@@ -55,7 +51,7 @@ function noteSnippet(note) {
 export default function Sidebar() {
   const sidebarCollapsed   = useUIStore(s => s.sidebarCollapsed)
   const toggleSidebar      = useUIStore(s => s.toggleSidebar)
-  const openSettings       = useUIStore(s => s.openSettings)
+  const openGearSix       = useUIStore(s => s.openSettings)
   const openCommandPalette = useUIStore(s => s.openCommandPalette)
   const activeWorkspaceId  = useUIStore(s => s.activeWorkspaceId)
 
@@ -68,6 +64,7 @@ export default function Sidebar() {
   const trashNote       = useNotesStore(s => s.trashNote)
 
   const [workspacesExpanded, setWorkspacesExpanded] = useState(true)
+  const [favoritesExpanded, setFavoritesExpanded]   = useState(true)
   const [trashAnchorY, setTrashAnchorY] = useState(null)
   const [menu,         setMenu]         = useState(null) // { noteId, x, y }
   const [renamingId,   setRenamingId]   = useState(null)
@@ -79,6 +76,12 @@ export default function Sidebar() {
     const rect = e.currentTarget.getBoundingClientRect()
     setMenu({ noteId: note.id, x: rect.right + 8, y: rect.top })
   }
+
+  const favoriteNotes = useMemo(() => {
+    return Object.values(allNotes)
+      .filter(n => n.favorite && !n.trashed && !n.archived)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+  }, [allNotes])
 
   const recentNotes = useMemo(() => {
     const list = Object.values(allNotes).filter(n => !n.trashed && !n.archived)
@@ -108,7 +111,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Search + New Note (compact row) */}
+      {/* MagnifyingGlass + New Note (compact row) */}
       <div className={`pt-1 pb-3 transition-all duration-250 ${c ? 'px-1.5 space-y-1.5' : 'px-3'}`}>
         {c ? (
           <>
@@ -124,10 +127,10 @@ export default function Sidebar() {
             <button
               onClick={openCommandPalette}
               title="Quick search  ⌘K"
-              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors min-w-0"
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors min-w-0"
             >
-              <MagnifyingGlass className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-              <span className="truncate text-gray-400 dark:text-gray-500">Search notes…</span>
+              <MagnifyingGlass className="w-4 h-4 text-muted flex-shrink-0" />
+              <span className="truncate text-muted">Search notes…</span>
             </button>
             <button
               onClick={handleNewNote}
@@ -135,7 +138,7 @@ export default function Sidebar() {
               aria-label="New Note (Ctrl+N)"
               className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors shadow-sm"
             >
-              <Plus className="w-4 h-4 text-white" weight="bold" />
+              <Plus className="w-4 h-4 text-white" />
             </button>
           </div>
         )}
@@ -191,25 +194,20 @@ export default function Sidebar() {
                       >
                         <NoteIcon note={note} />
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm truncate ${
+                          <p className={`text-sm font-medium truncate ${
                             note.id === selectedNoteId
-                              ? 'text-gray-900 dark:text-gray-100 font-medium'
-                              : 'text-gray-600 dark:text-gray-400'
+                              ? 'text-gray-900 dark:text-gray-100'
+                              : 'text-muted'
                           }`}>
                             {note.title || 'Untitled'}
                           </p>
-                          {noteSnippet(note) && (
-                            <p className="text-xs text-gray-400 dark:text-gray-600 truncate mt-0.5">
-                              {noteSnippet(note)}
-                            </p>
-                          )}
                         </div>
                         <button
                           onClick={e => openMenu(e, note)}
                           className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
                           tabIndex={0}
                         >
-                          <DotsThree className="w-4 h-4 text-gray-500" weight="bold" />
+                          <DotsThree className="w-4 h-4 text-muted" />
                         </button>
                       </button>
                     )}
@@ -220,11 +218,72 @@ export default function Sidebar() {
 
               <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />
 
+              {/* Favorites */}
+              <div className="px-2">
+                <button
+                  onClick={() => setFavoritesExpanded(!favoritesExpanded)}
+                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted uppercase tracking-wider hover:text-gray-600 transition-colors"
+                >
+                  <span className="flex-1 text-left">Favorites</span>
+                  {favoritesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
+                </button>
+              </div>
+              <AnimatePresence initial={false}>
+                {favoritesExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden"
+                  >
+                    {favoriteNotes.length === 0 ? (
+                      <p className="px-4 py-2 text-xs text-muted">No favourites yet</p>
+                    ) : (
+                      <div className="space-y-0.5 py-1">
+                        {favoriteNotes.map(note => (
+                          <div key={note.id} className="relative group">
+                            <button
+                              onClick={() => setSelectedNote(note.id)}
+                              className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors ${
+                                note.id === selectedNoteId
+                                  ? 'bg-gray-200/70 dark:bg-gray-800'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                              }`}
+                            >
+                              <FileText className="w-5 h-5 text-muted flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${
+                                  note.id === selectedNoteId
+                                    ? 'text-gray-900 dark:text-gray-100'
+                                    : 'text-muted'
+                                }`}>
+                                  {note.title || 'Untitled'}
+                                </p>
+                              </div>
+                              <button
+                                onClick={e => openMenu(e, note)}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
+                                tabIndex={0}
+                              >
+                                <DotsThree className="w-4 h-4 text-muted" />
+                              </button>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />
+
               {/* Workspaces */}
               <div className="px-2">
                 <button
                   onClick={() => setWorkspacesExpanded(!workspacesExpanded)}
-                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors"
+                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted uppercase tracking-wider hover:text-gray-600 transition-colors"
                 >
                   <span className="flex-1 text-left">Workspaces</span>
                   {workspacesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
@@ -244,17 +303,18 @@ export default function Sidebar() {
                 </AnimatePresence>
               </div>
 
+              <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />
+
               {/* Trash */}
-              <div className="px-2 mt-1">
+              <div className="px-2">
                 <button
                   onClick={e => setTrashAnchorY(e.currentTarget.getBoundingClientRect().top)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted uppercase tracking-wider hover:text-gray-600 transition-colors"
                 >
-                  <Trash className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-500 flex-1 text-left">Trash</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-600">
-                    {trashedCount || ''}
-                  </span>
+                  <span className="flex-1 text-left">Trash</span>
+                  {trashedCount > 0 && (
+                    <span className="font-normal normal-case tracking-normal">{trashedCount}</span>
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -263,15 +323,24 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className={`pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex items-center transition-all duration-250 ${c ? 'flex-col gap-1 px-1.5' : 'justify-between px-2'}`}>
+      <div className={`pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-0.5 transition-all duration-250 ${c ? 'px-1.5' : 'px-2'}`}>
         <button
-          onClick={openSettings}
+          onClick={openGearSix}
           title="Settings"
           aria-label="Settings"
-          className={`sidebar-item ${c ? 'w-full justify-center px-0' : 'flex-1'}`}
+          className={`sidebar-item ${c ? 'w-full justify-center px-0' : 'w-full'}`}
         >
           <GearSix className="w-5 h-5 text-black dark:text-white" />
           <FadeLabel show={!c}>Settings</FadeLabel>
+        </button>
+        <button
+          onClick={() => setSelectedNote(GUIDE_NOTE_ID)}
+          title="Help"
+          aria-label="Help"
+          className={`sidebar-item ${c ? 'w-full justify-center px-0' : 'w-full'}`}
+        >
+          <Question className="w-5 h-5 text-black dark:text-white" />
+          <FadeLabel show={!c}>Help</FadeLabel>
         </button>
       </div>
 
@@ -293,38 +362,30 @@ export default function Sidebar() {
             >
               {/* Header */}
               <div className="px-4 py-1.5 mb-1">
-                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500">Note</p>
+                <p className="text-xs font-semibold text-muted">Note</p>
               </div>
 
               <button
-                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null); toast(note.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: <Star className="w-4 h-4 text-yellow-400" weight="fill" /> }) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null); toast(note.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: <Star className="w-4 h-4 text-yellow-400" /> }) }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
-                <Star className={`w-4 h-4 ${note.favorite ? 'text-yellow-400' : 'text-gray-400 dark:text-gray-500'}`} weight={note.favorite ? 'fill' : 'regular'} />
+                <Star className={`w-4 h-4 ${note.favorite ? 'text-yellow-400' : 'text-muted'}`} weight={note.favorite ? 'fill' : 'regular'} />
                 {note.favorite ? 'Remove from favourites' : 'Add to favourites'}
               </button>
 
               <button
-                onClick={() => { updateNote(note.id, { pinned: !note.pinned }); setMenu(null); toast(note.pinned ? 'Note unpinned' : 'Note pinned', { icon: <PushPin className="w-4 h-4 text-brown-500" weight="fill" /> }) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
-              >
-                <PushPin className={`w-4 h-4 ${note.pinned ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`} weight={note.pinned ? 'fill' : 'regular'} />
-                {note.pinned ? 'Unpin' : 'Pin'}
-              </button>
-
-              <button
                 onClick={() => { setRenamingId(note.id); setRenameValue(note.title || ''); setMenu(null) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
-                <PencilSimple className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <PencilSimple className="w-4 h-4 text-muted" />
                 Rename
               </button>
 
               <button
-                onClick={() => { archiveNote(note.id, !note.archived); setMenu(null); toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-gray-500" /> }) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+                onClick={() => { archiveNote(note.id, !note.archived); setMenu(null); toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-muted" /> }) }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
               >
-                <Archive className={`w-4 h-4 ${note.archived ? 'text-brown-500' : 'text-gray-400 dark:text-gray-500'}`} weight={note.archived ? 'fill' : 'regular'} />
+                <Archive className={`w-4 h-4 ${note.archived ? 'text-brown-500' : 'text-muted'}`} weight={note.archived ? 'fill' : 'regular'} />
                 {note.archived ? 'Unarchive' : 'Archive'}
               </button>
 
@@ -332,7 +393,7 @@ export default function Sidebar() {
                 <>
                   <div className="mx-3 my-1 border-t border-gray-100 dark:border-gray-700" />
                   <button
-                    onClick={() => { trashNote(note.id, true); setMenu(null); toast('Moved to trash', { icon: <Trash className="w-4 h-4 text-red-500" /> }) }}
+                    onClick={() => { trashNote(note.id, true); setMenu(null); toast('Moved to Trash', { icon: <Trash className="w-4 h-4 text-red-500" /> }) }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                   >
                     <Trash className="w-4 h-4" />

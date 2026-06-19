@@ -1,4 +1,4 @@
-import { Trash } from '@phosphor-icons/react'
+﻿import { Trash } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 
@@ -28,10 +28,10 @@ export default function DeleteConfirmModal({ note, onConfirm, onCancel }) {
           {/* Icon + Copy */}
           <div className="flex flex-col items-center px-7 pt-8 pb-6 text-center">
             <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-4">
-              <Trash className="w-7 h-7 text-red-500" weight="fill" />
+              <Trash className="w-7 h-7 text-red-500" />
             </div>
             <h3 id="delete-confirm-title" className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete permanently?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-sm text-muted leading-relaxed">
               <span className="font-medium text-gray-700 dark:text-gray-200">"{note.title || 'Untitled'}"</span> will be gone forever and cannot be recovered.
             </p>
           </div>
@@ -40,7 +40,7 @@ export default function DeleteConfirmModal({ note, onConfirm, onCancel }) {
           <div className="flex items-center gap-2.5 px-5 pb-6">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] font-medium transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] font-medium transition-colors"
             >
               Cancel
             </button>

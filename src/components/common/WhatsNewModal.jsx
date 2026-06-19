@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+﻿import { motion } from 'framer-motion'
 import { X, Sparkle } from '@phosphor-icons/react'
 import { MODAL_BACKDROP, MODAL_CONTENT } from '../../utils/motionPresets'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
@@ -27,10 +27,10 @@ export default function WhatsNewModal({ version, onClose }) {
                 <X className="w-4 h-4" />
               </button>
               <div className="w-10 h-10 rounded-xl bg-brown-600 flex items-center justify-center mb-3">
-                <Sparkle className="w-5 h-5 text-white" weight="fill" />
+                <Sparkle className="w-5 h-5 text-white" />
               </div>
               <h2 id="whats-new-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">What's new in v{version}</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">A couple of small improvements since your last update</p>
+              <p className="text-xs text-muted mt-0.5">A couple of small improvements since your last update</p>
             </div>
 
             {/* Highlights */}
@@ -38,18 +38,18 @@ export default function WhatsNewModal({ version, onClose }) {
               {WHATS_NEW_ITEMS.map(({ icon: Icon, title, description, shortcut }, i) => (
                 <div key={i} className="flex gap-3">
                   <div className="w-9 h-9 rounded-lg bg-brown-50 dark:bg-brown-950/40 flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-5 h-5 text-brown-600 dark:text-brown-400" weight="bold" />
+                    <Icon className="w-5 h-5 text-brown-600 dark:text-brown-400" />
                   </div>
                   <div className="min-w-0 pt-0.5">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{title}</p>
                       {shortcut && (
-                        <kbd className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                        <kbd className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-muted border border-gray-200 dark:border-gray-700 flex-shrink-0">
                           {shortcut}
                         </kbd>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{description}</p>
+                    <p className="text-xs text-muted mt-1 leading-relaxed">{description}</p>
                   </div>
                 </div>
               ))}

@@ -1,6 +1,6 @@
 {
   "name": "smart-notepad",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "AI-powered smart notepad desktop application",
   "author": "mr-walter555",
@@ -21,6 +21,7 @@
     "patch-icon": "node scripts/patch-electron-icon.js"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "electron-context-menu": "^3.6.1",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.8.9",
@@ -31,7 +32,6 @@
   "devDependencies": {
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/sora": "^5.2.8",
-    "@phosphor-icons/react": "^2.1.10",
     "@tiptap/extension-character-count": "^2.1.13",
     "@tiptap/extension-code-block-lowlight": "^2.27.2",
     "@tiptap/extension-color": "^2.1.13",
@@ -59,7 +59,6 @@
     "gsap": "^3.15.0",
     "jimp": "^1.6.1",
     "lowlight": "^3.3.0",
-    "lucide-react": "^0.294.0",
     "png-to-ico": "^3.0.1",
     "postcss": "^8.4.32",
     "rcedit": "^5.0.2",

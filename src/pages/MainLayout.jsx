@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect } from 'react'
+﻿import { useRef, useEffect, useLayoutEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { gsap } from 'gsap'
 import Sidebar from '../components/Sidebar/Sidebar'
@@ -60,7 +60,7 @@ export default function MainLayout() {
     })
   }, [aiSidebarActive])
 
-  // ── FAB sparkle twinkle ───────────────────────────────────────────────
+  // ── FAB Sparkles twinkle ───────────────────────────────────────────────
   useEffect(() => {
     if (!sparkleRef.current) return
     const tween = gsap.to(sparkleRef.current, {
@@ -106,10 +106,10 @@ export default function MainLayout() {
               animate={{ opacity: 1 }}
               className="flex-1 flex items-center justify-center flex-col gap-3 bg-white dark:bg-gray-950"
             >
-              <p className="text-sm font-medium text-gray-400 dark:text-gray-600">No note selected</p>
-              <p className="text-xs text-gray-300 dark:text-gray-700">
+              <p className="text-sm font-medium text-muted dark:text-gray-600">No note selected</p>
+              <p className="text-xs text-muted dark:text-gray-700">
                 Press{' '}
-                <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-medium">Ctrl+N</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-muted text-xs font-medium">Ctrl+N</kbd>
                 {' '}to create a new note
               </p>
             </motion.div>
@@ -139,7 +139,7 @@ export default function MainLayout() {
           title="Ask your notes (Ctrl+Shift+A)"
         >
           <span ref={sparkleRef} className="flex items-center justify-center">
-            <Sparkle className="w-6 h-6 text-brown-500" weight="fill" />
+            <Sparkle className="w-6 h-6 text-brown-500" />
           </span>
         </motion.button>
       )}

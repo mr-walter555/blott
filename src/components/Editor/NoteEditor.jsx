@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -58,11 +58,11 @@ function AILoadingBar({ label, top, scrollRef, onStop }) {
       style={{ top, left: paddedLeft, width: paddedWidth }}
     >
       <div className="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm w-full">
-        <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 animate-spin" viewBox="0 0 24 24" fill="none">
+        <svg className="w-4 h-4 text-muted flex-shrink-0 animate-spin" viewBox="0 0 24 24" fill="none">
           <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
           <path d="M12 2a10 10 0 0 0-10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity="0.3"/>
         </svg>
-        <span className="text-sm text-gray-400 dark:text-gray-500 flex-1">{label}…</span>
+        <span className="text-sm text-muted flex-1">{label}…</span>
         <button onMouseDown={e => { e.preventDefault(); onStop() }}
           className="w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 flex items-center justify-center flex-shrink-0 transition-colors" title="Stop" aria-label="Stop">
           <div className="w-2.5 h-2.5 rounded-sm bg-gray-500 dark:bg-gray-300" />
@@ -235,7 +235,7 @@ export default function NoteEditor({ noteId }) {
     if (editor) {
       const size = fontSize === 'small' ? '14px' : fontSize === 'large' ? '18px' : '16px'
       editor.view.dom.style.fontSize = size
-      editor.view.dom.style.fontFamily = (FONT_FAMILIES[fontFamily] || FONT_FAMILIES.geist).value
+      editor.view.dom.style.fontFamily = (FONT_FAMILIES[fontFamily] || FONT_FAMILIES['google-sans']).value
     }
   }, [editor, fontSize, fontFamily])
 
@@ -337,7 +337,7 @@ export default function NoteEditor({ noteId }) {
               onKeyDown={handleTitleKeyDown}
               readOnly={note.trashed}
               placeholder="Untitled"
-              className={`w-full text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 mb-4 resize-none leading-tight ${note.trashed ? 'cursor-default' : ''}`}
+              className={`w-full text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-muted dark:placeholder:text-gray-700 mb-4 resize-none leading-tight ${note.trashed ? 'cursor-default' : ''}`}
             />
             <div className="tiptap-editor" onContextMenu={handleContextMenu}>
               <EditorContent editor={editor} />
@@ -396,7 +396,7 @@ export default function NoteEditor({ noteId }) {
           ) : null}
         </AnimatePresence>
 
-        <div className="flex items-center justify-between px-8 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+        <div className="flex items-center justify-between px-8 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-muted flex-shrink-0">
           <div className="flex items-center gap-3">
             <span>{wordCount} words</span>
             <span>{charCount} chars</span>
@@ -404,8 +404,8 @@ export default function NoteEditor({ noteId }) {
           <span className={
             saveStatus === 'error'   ? 'text-red-400' :
             saveStatus === 'unsaved' ? 'text-amber-400' :
-            saveStatus === 'saving'  ? 'text-gray-400 dark:text-gray-500' :
-            'text-gray-400 dark:text-gray-500'
+            saveStatus === 'saving'  ? 'text-muted' :
+            'text-muted'
           }>
             {saveStatus === 'error'   ? 'Failed to save' :
              saveStatus === 'unsaved' ? 'Unsaved changes' :
