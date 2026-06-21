@@ -87,7 +87,7 @@ export default function Sidebar() {
     const list = Object.values(allNotes).filter(n => !n.trashed && !n.archived)
     return [...list]
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-      .slice(0, 30)
+      .slice(0, 5)
   }, [allNotes])
 
   const trashedCount = useMemo(() => {
@@ -184,9 +184,9 @@ export default function Sidebar() {
                         />
                       </div>
                     ) : (
-                      <button
+                      <div
                         onClick={() => setSelectedNote(note.id)}
-                        className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors ${
+                        className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors cursor-pointer ${
                           note.id === selectedNoteId
                             ? 'bg-gray-200/70 dark:bg-gray-800'
                             : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
@@ -209,7 +209,7 @@ export default function Sidebar() {
                         >
                           <DotsThree className="w-4 h-4 text-muted" />
                         </button>
-                      </button>
+                      </div>
                     )}
 
                   </div>
@@ -243,9 +243,9 @@ export default function Sidebar() {
                       <div className="space-y-0.5 py-1">
                         {favoriteNotes.map(note => (
                           <div key={note.id} className="relative group">
-                            <button
+                            <div
                               onClick={() => setSelectedNote(note.id)}
-                              className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors ${
+                              className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors cursor-pointer ${
                                 note.id === selectedNoteId
                                   ? 'bg-gray-200/70 dark:bg-gray-800'
                                   : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
@@ -268,7 +268,7 @@ export default function Sidebar() {
                               >
                                 <DotsThree className="w-4 h-4 text-muted" />
                               </button>
-                            </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -348,6 +348,7 @@ export default function Sidebar() {
       {trashAnchorY !== null && (
         <TrashModal anchorY={trashAnchorY} onClose={() => setTrashAnchorY(null)} />
       )}
+
 
       {/* Fixed context menu — renders outside overflow:hidden */}
       {menu && (() => {

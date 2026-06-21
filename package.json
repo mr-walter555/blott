@@ -1,6 +1,6 @@
 {
   "name": "smart-notepad",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "AI-powered smart notepad desktop application",
   "author": "mr-walter555",
@@ -90,7 +90,7 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
     "mac": {

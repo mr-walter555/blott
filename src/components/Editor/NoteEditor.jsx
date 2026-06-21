@@ -199,6 +199,7 @@ export default function NoteEditor({ noteId }) {
     },
   })
 
+
   useEffect(() => {
     if (!note) return
     setTitle(note.title || '')
@@ -323,8 +324,6 @@ export default function NoteEditor({ noteId }) {
       <div className="flex flex-col flex-1 overflow-hidden">
         <NoteHeader note={note} editor={editor} />
 
-        {/* Voice memo player */}
-
         {!note.trashed && <EditorToolbar editor={editor} />}
 
         <div className="flex-1 flex overflow-hidden relative">
@@ -414,6 +413,7 @@ export default function NoteEditor({ noteId }) {
           </span>
         </div>
       </div>
+
     </div>
   )
 }
