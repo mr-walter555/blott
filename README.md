@@ -108,29 +108,6 @@ Jump to any note, action, or setting instantly with `Ctrl+K`.
 - **100% Local & Encrypted** — AES-256-GCM encryption; nothing leaves your machine
 
 ---
-
-## Quick Start
-
-### 1. Install dependencies
-```bash
-npm run install:all
-```
-
-### 2. Configure environment
-Copy `.env.example` to `.env` and add your OpenAI API key:
-```
-OPENAI_API_KEY=sk-...
-```
-
-### 3. Run in development
-```bash
-npm run dev
-```
-This starts:
-- Vite dev server (port 5173) for the React frontend
-- Express backend (port 3001) for AI API calls
-- Electron app pointing to localhost:5173
-
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
@@ -143,18 +120,42 @@ This starts:
 | `Alt+Space` | Quick Capture — works system-wide, even when blott is closed |
 | `Esc` | Close modal |
 
-## Build for Production
+## Your Notes Are Stored Here
 
-```bash
-npm run build
+| Platform | Path |
+|---|---|
+| Windows | `%APPDATA%\blott\` |
+| macOS | `~/Library/Application Support/blott/` |
+| Linux | `~/.config/blott/` |
+
+All notes are encrypted with AES-256-GCM before being written to disk — no cloud, no account, no tracking.
+
+## Built With
+
+**Backend:** Electron · Node.js · Electron Store
+
+**Frontend:** React 18 · Vite · TipTap · Zustand · Framer Motion · Tailwind CSS
+
 ```
 
-## Tech Stack
+## Contributing
 
-- **Electron** — Desktop shell
-- **React 18** + **Vite** — Frontend
-- **TipTap** — Rich text editor
-- **Zustand** — State management
-- **Framer Motion** — Animations
-- **Tailwind CSS** — Styling
-- **Electron Store** — Local encrypted storage
+Have an idea or found a bug? Contributions are welcome.
+
+Fork the repo, make your changes, and open a PR. For larger changes please open an issue first to discuss.
+
+## Author
+
+**Walter** ([@mr-walter555](https://github.com/mr-walter555))
+
+## License
+
+MIT
+
+## Acknowledgments
+
+Electron, TipTap, and all the open-source libraries that made this possible.
+
+---
+
+<p align="center">Made with ❤️ by <a href="https://github.com/mr-walter555">mr-walter555</a></p>
