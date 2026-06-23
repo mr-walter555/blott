@@ -1,7 +1,7 @@
-<h1 align="center">blott</h1>
 <p align="center">
   <img src="assets/blott.png" alt="blott logo" width="96" />
 </p>
+<h1 align="center">blott</h1>
 
 A fast, private desktop notepad with AI built in. Write and organise your notes locally — then ask AI questions across all of them at once.
 
