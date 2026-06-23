@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="assets/blott.png" alt="blott logo" width="96" />
+  <img src="assets/blott.webp" alt="blott logo" width="96" />
 </p>
 <h1 align="center">blott</h1>
 
 A fast, private desktop notepad with AI built in. Write and organise your notes locally — then ask AI questions across all of them at once.
 
 <p align="center">
-  <img src="assets/Screenshot 2026-06-23 100840.png" alt="blott app screenshot" width="780" />
+  <img src="assets/Screenshot 2026-06-23 100840.webp" alt="blott app screenshot" width="780" />
 </p>
 
 ## Download
@@ -36,7 +36,7 @@ Click your platform to download the latest version:
 ---
 
 <p align="center">
-  <img src="assets/Screenshot 2026-06-04 211434.png" alt="blott app screenshot 2" width="780" />
+  <img src="assets/Screenshot 2026-06-04 211434.webp" alt="blott app screenshot 2" width="780" />
 </p>
 
 ---
@@ -75,28 +75,28 @@ chmod +x blott-1.1.2.AppImage
 Chat with all your notes at once using natural language. Press `Ctrl+Q` to open.
 
 <p align="center">
-  <img src="assets/Screenshot 2026-06-23 104226.png" alt="Ask AI" width="560" />
+  <img src="assets/Screenshot 2026-06-23 104226.webp" alt="Ask AI" width="560" />
 </p>
 
 ### Quick Capture
 Press `Alt+Space` from anywhere — even when blott is closed — to instantly jot a thought.
 
 <p align="center">
-  <img src="assets/Screenshot 2026-06-23 104842.png" alt="Quick Capture" width="480" />
+  <img src="assets/Screenshot 2026-06-23 104842.webp" alt="Quick Capture" width="480" />
 </p>
 
 ### Floating Sticky Notes
 Pin any note as an always-on-top window that stays visible while you work in other apps.
 
 <p align="center">
-  <img src="assets/Screenshot 2026-06-23 104433.png" alt="Floating sticky note" width="480" />
+  <img src="assets/Screenshot 2026-06-23 104433.webp" alt="Floating sticky note" width="480" />
 </p>
 
 ### Command Palette
 Jump to any note, action, or setting instantly with `Ctrl+K`.
 
 <p align="center">
-  <img src="assets/Screenshot 2026-06-23 104628.png" alt="Command Palette" width="560" />
+  <img src="assets/Screenshot 2026-06-23 104628.webp" alt="Command Palette" width="560" />
 </p>
 
 ### More
