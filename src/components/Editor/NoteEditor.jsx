@@ -13,6 +13,10 @@ import TextStyle from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import ResizableImage from './extensions/ResizableImage'
+import Table from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableCell from '@tiptap/extension-table-cell'
+import TableHeader from '@tiptap/extension-table-header'
 import { createLowlight, common } from 'lowlight'
 
 const lowlight = createLowlight(common)
@@ -25,6 +29,7 @@ import AIResultPanel from './AIResultPanel'
 import { processText } from '../../services/aiService'
 import { AnimatePresence, motion } from 'framer-motion'
 import NoteHeader from './NoteHeader'
+import TagsBar from './TagsBar'
 import { getWordCount } from '../../utils/helpers'
 import { markdownToHtml } from '../../utils/markdownToHtml'
 import { handleLinkClick } from '../../utils/handleLinkClick'
@@ -150,6 +155,10 @@ export default function NoteEditor({ noteId }) {
       CharacterCount,
       TextStyle,
       Color,
+      Table.configure({ resizable: true, HTMLAttributes: { class: 'tiptap-table' } }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: note?.content || '',
     editable: !note?.trashed,
@@ -336,8 +345,9 @@ export default function NoteEditor({ noteId }) {
               onKeyDown={handleTitleKeyDown}
               readOnly={note.trashed}
               placeholder="Untitled"
-              className={`w-full text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-muted dark:placeholder:text-gray-700 mb-4 resize-none leading-tight ${note.trashed ? 'cursor-default' : ''}`}
+              className={`w-full text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none placeholder:text-muted dark:placeholder:text-gray-700 mb-2 resize-none leading-tight ${note.trashed ? 'cursor-default' : ''}`}
             />
+            <TagsBar note={note} />
             <div className="tiptap-editor" onContextMenu={handleContextMenu}>
               <EditorContent editor={editor} />
             </div>

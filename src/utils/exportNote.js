@@ -1,8 +1,8 @@
 export function exportAsPDF(title, content) {
   const w = window.open('', '_blank')
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title || 'Note'}</title><style>
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title || 'Note'}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet"><style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Georgia, 'Times New Roman', serif; max-width: 700px; margin: 48px auto; padding: 0 32px; color: #111; line-height: 1.7; }
+    body { font-family: 'Google Sans', ui-sans-serif, system-ui, sans-serif; max-width: 700px; margin: 48px auto; padding: 0 32px; color: #111; line-height: 1.7; }
     h1 { font-size: 2em; font-weight: 700; margin-bottom: 8px; }
     h2 { font-size: 1.5em; font-weight: 600; margin: 28px 0 8px; }
     h3 { font-size: 1.2em; font-weight: 600; margin: 20px 0 6px; }

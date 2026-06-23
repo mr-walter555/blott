@@ -31,7 +31,7 @@ function toCandidate(note, body) {
   return {
     id: note.id,
     title: note.title || 'Untitled',
-    excerpt: truncate(body, 800),
+    excerpt: truncate(body, 1500),
     updatedAt: note.updatedAt,
   }
 }

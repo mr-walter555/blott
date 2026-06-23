@@ -11,7 +11,7 @@ import {
 import toast from 'react-hot-toast'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
-import { askNotes, getAIStatus } from '../../services/aiService'
+import { askNotesStream, getAIStatus } from '../../services/aiService'
 import { electronService } from '../../services/electronService'
 import { rankNotesByRelevance } from '../../utils/noteSearch'
 import { loadConversations, saveConversation, deleteConversation } from '../../utils/askAIHistory'
@@ -323,16 +323,31 @@ export default function AskAIModal() {
     const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
     let nextThread
     try {
-      const { answer, citedIds } = await askNotes(trimmed, candidates, toClockCounterClockwisePayload(baseThread))
+      const streamingTurn = { question: trimmed, versions: [{ answer: '', sources: candidates, cited: [], feedback: null }], versionIndex: 0, streaming: true }
+      setThread([...baseThread, streamingTurn])
+      let accumulated = ''
+      const { citedIds } = await askNotesStream(trimmed, candidates, toClockCounterClockwisePayload(baseThread), (token) => {
+        accumulated += token
+        setThread(prev => {
+          const updated = [...prev]
+          const last = { ...updated[updated.length - 1] }
+          const versions = [...getVersions(last)]
+          versions[last.versionIndex ?? 0] = { ...versions[last.versionIndex ?? 0], answer: accumulated }
+          last.versions = versions
+          updated[updated.length - 1] = last
+          return updated
+        })
+      })
       const cited = candidates.filter(s => citedIds?.includes(s.id))
-      nextThread = [...baseThread, { question: trimmed, versions: [{ answer, sources: candidates, cited, feedback: null }], versionIndex: 0 }]
+      nextThread = [...baseThread, { question: trimmed, versions: [{ answer: accumulated, sources: candidates, cited, feedback: null }], versionIndex: 0 }]
+      setThread(nextThread)
     } catch (err) {
       nextThread = [...baseThread, { question: trimmed, error: err?.response?.data?.error || err.message || 'Something went wrong.' }]
+      setThread(nextThread)
     } finally {
       setLoading(false)
     }
-    setThread(nextThread)
-    setClockCounterClockwise(saveConversation({ id: conversationId, thread: nextThread }))
+    if (nextThread) setClockCounterClockwise(saveConversation({ id: conversationId, thread: nextThread }))
   }
 
   const regenerate = async (index) => {
@@ -345,17 +360,34 @@ export default function AskAIModal() {
     const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
     let nextThread
     try {
-      const { answer, citedIds } = await askNotes(trimmed, candidates, toClockCounterClockwisePayload(baseThread))
+      const existingVersions = turn.error ? [] : getVersions(turn)
+      const newVersionIndex = existingVersions.length
+      const streamingVersions = [...existingVersions, { answer: '', sources: candidates, cited: [], feedback: null }]
+      setThread([...baseThread, { question: trimmed, versions: streamingVersions, versionIndex: newVersionIndex, streaming: true }])
+      let accumulated = ''
+      const { citedIds } = await askNotesStream(trimmed, candidates, toClockCounterClockwisePayload(baseThread), (token) => {
+        accumulated += token
+        setThread(prev => {
+          const updated = [...prev]
+          const last = { ...updated[updated.length - 1] }
+          const versions = [...getVersions(last)]
+          versions[newVersionIndex] = { ...versions[newVersionIndex], answer: accumulated }
+          last.versions = versions
+          updated[updated.length - 1] = last
+          return updated
+        })
+      })
       const cited = candidates.filter(s => citedIds?.includes(s.id))
-      const versions = [...(turn.error ? [] : getVersions(turn)), { answer, sources: candidates, cited, feedback: null }]
-      nextThread = [...baseThread, { question: trimmed, versions, versionIndex: versions.length - 1 }]
+      const finalVersions = [...existingVersions, { answer: accumulated, sources: candidates, cited, feedback: null }]
+      nextThread = [...baseThread, { question: trimmed, versions: finalVersions, versionIndex: newVersionIndex }]
+      setThread(nextThread)
     } catch (err) {
       nextThread = [...baseThread, { question: trimmed, error: err?.response?.data?.error || err.message || 'Something went wrong.' }]
+      setThread(nextThread)
     } finally {
       setLoading(false)
     }
-    setThread(nextThread)
-    setClockCounterClockwise(saveConversation({ id: conversationId, thread: nextThread }))
+    if (nextThread) setClockCounterClockwise(saveConversation({ id: conversationId, thread: nextThread }))
   }
 
   const submitEdit = (index, text) => {
@@ -769,7 +801,7 @@ export default function AskAIModal() {
                   </div>
                 ))}
 
-                {loading && (
+                {loading && !thread.some(t => t.streaming) && (
                   <div className="flex items-center gap-2 text-sm text-muted">
                     <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                       <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
@@ -800,51 +832,57 @@ export default function AskAIModal() {
 
       {/* Connect AI prompt — replaces suggestions + input when no key is configured */}
       {!historyOpen && aiStatus === 'unconfigured' && (
-        <div className="px-3 pb-3 pt-1 flex-shrink-0">
-          <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-3.5 space-y-2.5">
-            <div className="flex items-start gap-2.5">
-              <Key className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Connect AI to ask your notes</p>
-                {electronService.isElectron ? (
-                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5 leading-relaxed">
-                    Paste a free OpenRouter API key below. Get one at <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">openrouter.ai/keys</code>
-                  </p>
-                ) : (
-                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5 leading-relaxed">
-                    Add <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">OPENROUTER_API_KEY</code> to the backend <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">.env</code> and restart the backend.
-                  </p>
-                )}
+        <div className="px-4 pb-4 pt-2 flex-shrink-0">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-900 p-4 space-y-3.5">
+
+            {/* Icon + heading */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-brown-50 dark:bg-brown-950/60 border border-brown-100 dark:border-brown-800/40 flex items-center justify-center flex-shrink-0">
+                <Sparkle className="w-4.5 h-4.5 text-brown-500" weight="fill" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">Ask AI about your notes</p>
+                <p className="text-xs text-muted mt-0.5">
+                  {electronService.isElectron
+                    ? 'Add a free OpenRouter key to get started'
+                    : 'Set OPENROUTER_API_KEY in the backend .env'}
+                </p>
               </div>
             </div>
+
             {electronService.isElectron && (
-              <div className="flex gap-1.5">
-                <div className="relative flex-1">
+              <>
+                {/* API key input */}
+                <div className="relative">
                   <input
                     type={apiKeyVisible ? 'text' : 'password'}
                     value={apiKey}
                     onChange={e => setApiKey(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') connectAI() }}
                     placeholder="sk-or-v1-..."
-                    className="w-full text-xs pl-2.5 pr-8 py-2 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-white dark:bg-gray-900 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100 font-mono"
+                    className="w-full text-xs pl-3 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-brown-300 focus:ring-2 focus:ring-brown-500/20 text-gray-900 dark:text-gray-100 font-mono placeholder:text-muted transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setApiKeyVisible(v => !v)}
                     aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-gray-600 dark:hover:text-muted"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
-                    {apiKeyVisible ? <EyeSlash className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {apiKeyVisible ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <button
-                  onClick={connectAI}
-                  disabled={!apiKey.trim() || connecting}
-                  className="px-3.5 py-2 text-xs font-medium bg-brown-600 hover:bg-brown-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex-shrink-0"
-                >
-                  {connecting ? 'Connecting…' : 'Connect'}
-                </button>
-              </div>
+
+                {/* Connect button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={connectAI}
+                    disabled={!apiKey.trim() || connecting}
+                    className="px-4 py-2 text-xs font-semibold bg-brown-600 hover:bg-brown-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                  >
+                    {connecting ? 'Connecting…' : 'Connect'}
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

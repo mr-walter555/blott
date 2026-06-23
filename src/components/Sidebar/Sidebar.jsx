@@ -1,41 +1,16 @@
-﻿import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import {
   GearSix, Plus, SidebarSimple, MagnifyingGlass,
   CaretDown, CaretRight, FileText, Star, ListChecks,
-  DotsThree, Trash, PencilSimple, BookOpen, Archive, Question
+  DotsThree, Trash, PencilSimple, BookOpen, Archive, Question, SquaresFour, Clock
 } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import WorkspaceSection from './WorkspaceSection'
 import TrashModal from './TrashModal'
 import EmptyState from '../common/EmptyState'
 import { GUIDE_NOTE_ID } from '../../utils/guideNote'
-
-const labelVariants = {
-  visible: { opacity: 1, transition: { duration: 0.15, delay: 0.15 } },
-  hidden:  { opacity: 0, transition: { duration: 0.08 } },
-}
-
-function FadeLabel({ show, children, className = '' }) {
-  return (
-    <AnimatePresence initial={false}>
-      {show && (
-        <motion.span
-          key="label"
-          variants={labelVariants}
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
-          className={`overflow-hidden whitespace-nowrap ${className}`}
-        >
-          {children}
-        </motion.span>
-      )}
-    </AnimatePresence>
-  )
-}
 
 function NoteIcon({ note }) {
   if (note.id === GUIDE_NOTE_ID) return <BookOpen className="w-5 h-5 text-amber-500 flex-shrink-0" />
@@ -44,14 +19,10 @@ function NoteIcon({ note }) {
   return <FileText className="w-5 h-5 text-muted flex-shrink-0" />
 }
 
-function noteSnippet(note) {
-  return note.content?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 72) || ''
-}
-
 export default function Sidebar() {
   const sidebarCollapsed   = useUIStore(s => s.sidebarCollapsed)
   const toggleSidebar      = useUIStore(s => s.toggleSidebar)
-  const openGearSix       = useUIStore(s => s.openSettings)
+  const openGearSix        = useUIStore(s => s.openSettings)
   const openCommandPalette = useUIStore(s => s.openCommandPalette)
   const activeWorkspaceId  = useUIStore(s => s.activeWorkspaceId)
 
@@ -66,7 +37,7 @@ export default function Sidebar() {
   const [workspacesExpanded, setWorkspacesExpanded] = useState(true)
   const [favoritesExpanded, setFavoritesExpanded]   = useState(true)
   const [trashAnchorY, setTrashAnchorY] = useState(null)
-  const [menu,         setMenu]         = useState(null) // { noteId, x, y }
+  const [menu,         setMenu]         = useState(null)
   const [renamingId,   setRenamingId]   = useState(null)
   const [renameValue,  setRenameValue]  = useState('')
   const renameRef = useRef(null)
@@ -104,26 +75,26 @@ export default function Sidebar() {
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-925 border-r border-gray-200 dark:border-gray-800 select-none overflow-hidden w-full">
 
-      {/* Header */}
-      <div className={`flex items-center pt-4 pb-2 transition-all duration-250 ${c ? 'justify-center px-0' : 'justify-between px-3'}`}>
+      {/* Header — toggle button always centered, stays put */}
+      <div className="flex items-center justify-between pt-4 pb-2 px-3">
         <button onClick={toggleSidebar} className="btn-icon flex-shrink-0" title={c ? 'Expand sidebar' : 'Collapse sidebar'} aria-label={c ? 'Expand sidebar' : 'Collapse sidebar'}>
           <SidebarSimple className="w-5 h-5 text-black dark:text-white" />
         </button>
       </div>
 
-      {/* MagnifyingGlass + New Note (compact row) */}
-      <div className={`pt-1 pb-3 transition-all duration-250 ${c ? 'px-1.5 space-y-1.5' : 'px-3'}`}>
+      {/* Search + New Note */}
+      <div className="pt-1 pb-3 px-1.5">
         {c ? (
-          <>
+          <div className="space-y-1.5">
             <button onClick={openCommandPalette} title="Quick search" aria-label="Quick search" className="w-full flex items-center justify-center p-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <MagnifyingGlass className="w-5 h-5 text-black dark:text-white" />
             </button>
             <button onClick={handleNewNote} title="New Note" aria-label="New Note" className="w-full flex items-center justify-center p-2 rounded-lg bg-brown-600 hover:bg-brown-700 transition-colors">
               <Plus className="w-5 h-5 text-white" />
             </button>
-          </>
+          </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-1.5">
             <button
               onClick={openCommandPalette}
               title="Quick search  ⌘K"
@@ -146,211 +117,182 @@ export default function Sidebar() {
 
       <div className="mx-3 border-t border-gray-200 dark:border-gray-800 mb-1" />
 
-      {/* Recents + Workspaces */}
+      {/* Scrollable nav — icons always at px-3, never repositioned during GSAP animation */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'none' }}>
-        <AnimatePresence initial={false}>
-          {!c && (
-            <motion.div
-              key="content"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.15, delay: 0.15 } }}
-              exit={{ opacity: 0, transition: { duration: 0.08 } }}
-            >
-              {/* Recents label */}
-              <div className="px-4 pt-2 pb-1">
-                <span className="section-label">Recents</span>
-              </div>
 
-              {/* Note rows */}
-              {recentNotes.length === 0 ? (
-                <EmptyState message="No notes yet" className="py-3" />
-              ) : (
-                recentNotes.map(note => (
-                  <div key={note.id} className="relative group">
-                    {renamingId === note.id ? (
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <NoteIcon note={note} />
-                        <input
-                          ref={renameRef}
-                          value={renameValue}
-                          onChange={e => setRenameValue(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') { if (renameValue.trim()) updateNote(note.id, { title: renameValue.trim() }); setRenamingId(null) }
-                            if (e.key === 'Escape') setRenamingId(null)
-                          }}
-                          onBlur={() => { if (renameValue.trim()) updateNote(note.id, { title: renameValue.trim() }); setRenamingId(null) }}
-                          className="flex-1 text-sm bg-white border border-brown-300 rounded px-1.5 py-0.5 outline-none text-gray-900"
-                          autoFocus
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        onClick={() => setSelectedNote(note.id)}
-                        className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors cursor-pointer ${
-                          note.id === selectedNoteId
-                            ? 'bg-gray-200/70 dark:bg-gray-800'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                        }`}
-                      >
-                        <NoteIcon note={note} />
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${
-                            note.id === selectedNoteId
-                              ? 'text-gray-900 dark:text-gray-100'
-                              : 'text-muted'
-                          }`}>
-                            {note.title || 'Untitled'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={e => openMenu(e, note)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
-                          tabIndex={0}
-                        >
-                          <DotsThree className="w-4 h-4 text-muted" />
-                        </button>
-                      </div>
-                    )}
+        {/* Recents */}
+        <button
+          onClick={c ? toggleSidebar : undefined}
+          className="flex items-center gap-1.5 w-full px-[18px] pt-2 pb-1"
+          title={c ? 'Expand sidebar' : undefined}
+          style={{ cursor: c ? 'pointer' : 'default' }}
+        >
+          <Clock className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
+          {!c && <span className="section-label">Recents</span>}
+        </button>
 
+        {!c && (
+          recentNotes.length === 0 ? (
+            <EmptyState message="No notes yet" className="py-3" />
+          ) : (
+            recentNotes.map(note => (
+              <div key={note.id} className="relative group">
+                {renamingId === note.id ? (
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <NoteIcon note={note} />
+                    <input
+                      ref={renameRef}
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { if (renameValue.trim()) updateNote(note.id, { title: renameValue.trim() }); setRenamingId(null) }
+                        if (e.key === 'Escape') setRenamingId(null)
+                      }}
+                      onBlur={() => { if (renameValue.trim()) updateNote(note.id, { title: renameValue.trim() }); setRenamingId(null) }}
+                      className="flex-1 text-sm bg-white border border-brown-300 rounded px-1.5 py-0.5 outline-none text-gray-900"
+                      autoFocus
+                    />
                   </div>
-                ))
-              )}
-
-              <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />
-
-              {/* Favorites */}
-              <div className="px-2">
-                <button
-                  onClick={() => setFavoritesExpanded(!favoritesExpanded)}
-                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted uppercase tracking-wider hover:text-gray-600 transition-colors"
-                >
-                  <span className="flex-1 text-left">Favorites</span>
-                  {favoritesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
-                </button>
-              </div>
-              <AnimatePresence initial={false}>
-                {favoritesExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="overflow-hidden"
+                ) : (
+                  <div
+                    onClick={() => setSelectedNote(note.id)}
+                    className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors cursor-pointer ${
+                      note.id === selectedNoteId
+                        ? 'bg-gray-200/70 dark:bg-gray-800'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                    }`}
                   >
-                    {favoriteNotes.length === 0 ? (
-                      <p className="px-4 py-2 text-xs text-muted">No favourites yet</p>
-                    ) : (
-                      <div className="space-y-0.5 py-1">
-                        {favoriteNotes.map(note => (
-                          <div key={note.id} className="relative group">
-                            <div
-                              onClick={() => setSelectedNote(note.id)}
-                              className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors cursor-pointer ${
-                                note.id === selectedNoteId
-                                  ? 'bg-gray-200/70 dark:bg-gray-800'
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                              }`}
-                            >
-                              <FileText className="w-5 h-5 text-muted flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium truncate ${
-                                  note.id === selectedNoteId
-                                    ? 'text-gray-900 dark:text-gray-100'
-                                    : 'text-muted'
-                                }`}>
-                                  {note.title || 'Untitled'}
-                                </p>
-                              </div>
-                              <button
-                                onClick={e => openMenu(e, note)}
-                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
-                                tabIndex={0}
-                              >
-                                <DotsThree className="w-4 h-4 text-muted" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />
-
-              {/* Workspaces */}
-              <div className="px-2">
-                <button
-                  onClick={() => setWorkspacesExpanded(!workspacesExpanded)}
-                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted uppercase tracking-wider hover:text-gray-600 transition-colors"
-                >
-                  <span className="flex-1 text-left">Workspaces</span>
-                  {workspacesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
-                </button>
-                <AnimatePresence initial={false}>
-                  {workspacesExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.15 }}
-                      className="overflow-hidden"
+                    <NoteIcon note={note} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${
+                        note.id === selectedNoteId
+                          ? 'text-gray-900 dark:text-gray-100'
+                          : 'text-muted'
+                      }`}>
+                        {note.title || 'Untitled'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={e => openMenu(e, note)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
+                      tabIndex={0}
                     >
-                      <WorkspaceSection />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <DotsThree className="w-4 h-4 text-muted" />
+                    </button>
+                  </div>
+                )}
               </div>
+            ))
+          )
+        )}
 
-              <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />
+        {!c && <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />}
 
-              {/* Trash */}
-              <div className="px-2">
-                <button
-                  onClick={e => setTrashAnchorY(e.currentTarget.getBoundingClientRect().top)}
-                  className="w-full flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted uppercase tracking-wider hover:text-gray-600 transition-colors"
-                >
-                  <span className="flex-1 text-left">Trash</span>
-                  {trashedCount > 0 && (
-                    <span className="font-normal normal-case tracking-normal">{trashedCount}</span>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Favorites — icon stays at px-3 always */}
+        <div className="px-1.5">
+          <button
+            onClick={c ? toggleSidebar : () => setFavoritesExpanded(!favoritesExpanded)}
+            className="sidebar-item w-full"
+          >
+            <Star className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
+            {!c && <span className="flex-1 text-left text-xs font-semibold text-muted uppercase tracking-wider">Favorites</span>}
+            {!c && (favoritesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />)}
+          </button>
+        </div>
+        {!c && favoritesExpanded && (
+          favoriteNotes.length === 0 ? (
+            <EmptyState message="No favourites yet" className="py-3" />
+          ) : (
+            <div className="space-y-0.5 py-1">
+              {favoriteNotes.map(note => (
+                <div key={note.id} className="relative group">
+                  <div
+                    onClick={() => setSelectedNote(note.id)}
+                    className={`w-full flex items-center gap-2.5 mx-1.5 px-2.5 py-2 text-left rounded-lg transition-colors cursor-pointer ${
+                      note.id === selectedNoteId
+                        ? 'bg-gray-200/70 dark:bg-gray-800'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                    }`}
+                  >
+                    <FileText className="w-5 h-5 text-muted flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${
+                        note.id === selectedNoteId
+                          ? 'text-gray-900 dark:text-gray-100'
+                          : 'text-muted'
+                      }`}>
+                        {note.title || 'Untitled'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={e => openMenu(e, note)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 focus:opacity-100"
+                      tabIndex={0}
+                    >
+                      <DotsThree className="w-4 h-4 text-muted" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {!c && <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />}
+
+        {/* Workspaces — icon stays at px-3 always */}
+        <div className="px-1.5">
+          <button
+            onClick={c ? toggleSidebar : () => setWorkspacesExpanded(!workspacesExpanded)}
+            className="sidebar-item w-full"
+          >
+            <SquaresFour className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
+            {!c && <span className="flex-1 text-left text-xs font-semibold text-muted uppercase tracking-wider">Workspaces</span>}
+            {!c && (workspacesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />)}
+          </button>
+          {!c && workspacesExpanded && <WorkspaceSection />}
+        </div>
+
       </div>
 
-      {/* Footer */}
-      <div className={`pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-0.5 transition-all duration-250 ${c ? 'px-1.5' : 'px-2'}`}>
+      {/* Footer — icons always at sidebar-item's px-3, never reposition */}
+      <div className="pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-0.5 px-1.5">
+        <button
+          onClick={e => setTrashAnchorY(e.currentTarget.getBoundingClientRect().top)}
+          title="Trash"
+          aria-label="Trash"
+          className="sidebar-item w-full"
+        >
+          <Trash className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
+          {!c && <span className="whitespace-nowrap">Trash</span>}
+          {trashedCount > 0 && !c && (
+            <span className="ml-auto text-xs text-muted">{trashedCount}</span>
+          )}
+        </button>
         <button
           onClick={openGearSix}
           title="Settings"
           aria-label="Settings"
-          className={`sidebar-item ${c ? 'w-full justify-center px-0' : 'w-full'}`}
+          className="sidebar-item w-full"
         >
-          <GearSix className="w-5 h-5 text-black dark:text-white" />
-          <FadeLabel show={!c}>Settings</FadeLabel>
+          <GearSix className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
+          {!c && <span className="whitespace-nowrap">Settings</span>}
         </button>
         <button
           onClick={() => setSelectedNote(GUIDE_NOTE_ID)}
           title="Help"
           aria-label="Help"
-          className={`sidebar-item ${c ? 'w-full justify-center px-0' : 'w-full'}`}
+          className="sidebar-item w-full"
         >
-          <Question className="w-5 h-5 text-black dark:text-white" />
-          <FadeLabel show={!c}>Help</FadeLabel>
+          <Question className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
+          {!c && <span className="whitespace-nowrap">Help</span>}
         </button>
       </div>
 
-      {/* Trash modal */}
       {trashAnchorY !== null && (
         <TrashModal anchorY={trashAnchorY} onClose={() => setTrashAnchorY(null)} />
       )}
 
-
-      {/* Fixed context menu — renders outside overflow:hidden */}
       {menu && (() => {
         const note = allNotes[menu.noteId]
         if (!note) return null
@@ -361,7 +303,6 @@ export default function Sidebar() {
               className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-md py-2 w-56"
               style={{ top: menu.y, left: menu.x }}
             >
-              {/* Header */}
               <div className="px-4 py-1.5 mb-1">
                 <p className="text-xs font-semibold text-muted">Note</p>
               </div>

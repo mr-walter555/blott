@@ -43,7 +43,7 @@ const INTEGRATIONS = [
   {
     id: 'zapier',
     name: 'Zapier',
-    description: 'Connect Smart Notepad to 6,000+ apps via Zapier webhooks.',
+    description: 'Connect blott to 6,000+ apps via Zapier webhooks.',
     logo: '⚡',
     status: 'coming-soon',
   },
@@ -220,7 +220,7 @@ export default function SettingsModal() {
   const handleExportAll = () => {
     const notes = Object.values(useNotesStore.getState().notes)
     const payload = {
-      app: 'smart-notepad',
+      app: 'blott',
       version: 1,
       exportedAt: new Date().toISOString(),
       notes,
@@ -229,7 +229,7 @@ export default function SettingsModal() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `smart-notepad-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `blott-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -438,7 +438,7 @@ export default function SettingsModal() {
 
               {activeSection === 'integrations' && (
                 <div className="space-y-3">
-                  <p className="text-xs text-muted">Connect Smart Notepad with your favourite tools. More integrations coming soon.</p>
+                  <p className="text-xs text-muted">Connect blott with your favourite tools. More integrations coming soon.</p>
                   <div className="grid grid-cols-1 gap-3">
                     {INTEGRATIONS.map(({ id, name, description, logo, status }) => (
                       <div key={id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
@@ -515,7 +515,7 @@ export default function SettingsModal() {
 
               {activeSection === 'about' && (
                 <>
-                  <SettingRow label="Version" description="Smart Notepad">
+                  <SettingRow label="Version" description="blott">
                     <span className="text-sm text-gray-600 dark:text-muted font-mono">
                       {electronService.isElectron ? (appInfo?.version ? `v${appInfo.version}` : 'Loading…') : 'Browser'}
                     </span>
@@ -523,7 +523,7 @@ export default function SettingsModal() {
 
                   {electronService.isElectron && (
                     <>
-                      <SettingRow label="Updates" description="Smart Notepad checks for new versions on launch">
+                      <SettingRow label="Updates" description="blott checks for new versions on launch">
                         <div className="flex items-center gap-3">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${(UPDATE_STATUS_META[updateStatus?.status] ?? UPDATE_STATUS_META.checking).pill}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${(UPDATE_STATUS_META[updateStatus?.status] ?? UPDATE_STATUS_META.checking).dot}`} />
@@ -568,7 +568,7 @@ export default function SettingsModal() {
                         </div>
                       </SettingRow>
 
-                      <SettingRow label="Launch at Startup" description="Automatically open Smart Notepad when you log in">
+                      <SettingRow label="Launch at Startup" description="Automatically open blott when you log in">
                         <Toggle checked={openAtLogin} onChange={toggleOpenAtLogin} disabled={openAtLoginSaving} />
                       </SettingRow>
 

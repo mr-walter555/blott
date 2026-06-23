@@ -85,6 +85,7 @@ export const useNotesStore = create((set, get) => ({
       archived: false,
       trashed: false,
       workspaceId: null,
+      tags: [],
       createdAt: now,
       updatedAt: now,
       ...overrides,

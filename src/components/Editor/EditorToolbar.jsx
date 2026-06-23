@@ -1,13 +1,24 @@
+import { useState, useRef, useEffect } from 'react'
 import {
   TextB, TextItalic, TextUnderline, TextStrikethrough,
   TextHOne, TextHTwo, TextHThree, ListBullets, ListNumbers,
   CheckSquare, Quotes, Code, CodeBlock, Link, Highlighter,
-  ArrowCounterClockwise, ArrowClockwise, Minus, Image,
+  ArrowCounterClockwise, ArrowClockwise, Minus, Image, Table,
   TextAlignLeft, TextAlignCenter, TextAlignRight, TextAlignJustify
 } from '@phosphor-icons/react'
 
 export default function EditorToolbar({ editor }) {
   if (!editor) return null
+
+  const [tableMenuOpen, setTableMenuOpen] = useState(false)
+  const tableMenuRef = useRef(null)
+
+  useEffect(() => {
+    if (!tableMenuOpen) return
+    const close = (e) => { if (!tableMenuRef.current?.contains(e.target)) setTableMenuOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [tableMenuOpen])
 
   const readAsDataURL = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -50,6 +61,19 @@ export default function EditorToolbar({ editor }) {
   )
 
   const Divider = () => <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
+
+  const MenuItem = ({ label, onClick, danger }) => (
+    <button
+      onMouseDown={e => { e.preventDefault(); onClick() }}
+      className={`w-full flex items-center px-3 py-1.5 text-sm transition-colors ${
+        danger
+          ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+          : 'text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06]'
+      }`}
+    >
+      {label}
+    </button>
+  )
 
   const setLink = () => {
     const prev = editor.getAttributes('link').href
@@ -141,6 +165,48 @@ export default function EditorToolbar({ editor }) {
         <Image className="w-5 h-5 text-black dark:text-white" />
         <input type="file" accept="image/*" multiple className="hidden" onChange={insertImages} />
       </label>
+      <Divider />
+
+      {/* Table button + context menu */}
+      <div className="relative" ref={tableMenuRef}>
+        <ToolBtn
+          onClick={() => setTableMenuOpen(o => !o)}
+          active={editor.isActive('table') || tableMenuOpen}
+          title="Table"
+        >
+          <Table className="w-5 h-5 text-black dark:text-white" />
+        </ToolBtn>
+
+        {tableMenuOpen && (
+          <div className="absolute left-0 top-10 z-50 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden w-52 py-1">
+            {editor.isActive('table') ? (
+              <>
+                <p className="px-3 pt-1.5 pb-1 text-xs font-semibold text-muted uppercase tracking-wider">Rows</p>
+                <MenuItem label="Add row above" onClick={() => { editor.chain().focus().addRowBefore().run(); setTableMenuOpen(false) }} />
+                <MenuItem label="Add row below"  onClick={() => { editor.chain().focus().addRowAfter().run();  setTableMenuOpen(false) }} />
+                <MenuItem label="Delete row"     onClick={() => { editor.chain().focus().deleteRow().run();    setTableMenuOpen(false) }} danger />
+                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                <p className="px-3 pt-1.5 pb-1 text-xs font-semibold text-muted uppercase tracking-wider">Columns</p>
+                <MenuItem label="Add column left"  onClick={() => { editor.chain().focus().addColumnBefore().run(); setTableMenuOpen(false) }} />
+                <MenuItem label="Add column right" onClick={() => { editor.chain().focus().addColumnAfter().run();  setTableMenuOpen(false) }} />
+                <MenuItem label="Delete column"    onClick={() => { editor.chain().focus().deleteColumn().run();    setTableMenuOpen(false) }} danger />
+                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                <MenuItem label="Toggle header row" onClick={() => { editor.chain().focus().toggleHeaderRow().run(); setTableMenuOpen(false) }} />
+                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                <MenuItem label="Delete table" onClick={() => { editor.chain().focus().deleteTable().run(); setTableMenuOpen(false) }} danger />
+              </>
+            ) : (
+              <>
+                <p className="px-3 pt-1.5 pb-1 text-xs font-semibold text-muted uppercase tracking-wider">Insert table</p>
+                <MenuItem label="2 × 2" onClick={() => { editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run(); setTableMenuOpen(false) }} />
+                <MenuItem label="3 × 3" onClick={() => { editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); setTableMenuOpen(false) }} />
+                <MenuItem label="4 × 4" onClick={() => { editor.chain().focus().insertTable({ rows: 4, cols: 4, withHeaderRow: true }).run(); setTableMenuOpen(false) }} />
+                <MenuItem label="3 × 5" onClick={() => { editor.chain().focus().insertTable({ rows: 5, cols: 3, withHeaderRow: true }).run(); setTableMenuOpen(false) }} />
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

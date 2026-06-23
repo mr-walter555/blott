@@ -26,6 +26,6 @@ export const WHATS_NEW_ITEMS = [
   {
     icon: Bell,
     title: 'Monitor notifications',
-    description: 'Quick Capture and update alerts now show native OS notifications when Smart Notepad is in the background.',
+    description: 'Quick Capture and update alerts now show native OS notifications when blott is in the background.',
   },
 ]

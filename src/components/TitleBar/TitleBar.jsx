@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import blottIcon from '../../../assets/icon.png'
 
 const MinimizeIcon = () => (
   <svg width="10" height="1" viewBox="0 0 10 1" fill="currentColor">
@@ -36,20 +37,28 @@ export default function TitleBar() {
 
   return (
     <div
-      className="flex items-center flex-shrink-0 bg-gray-950 select-none"
+      className="flex items-center flex-shrink-0 bg-white dark:bg-[#1e1e1e] border-b border-gray-200 dark:border-gray-800 select-none"
       style={{ height: 32, WebkitAppRegion: 'drag' }}
     >
-      <div className="flex-1 flex items-center px-3.5">
-        <span className="text-xs font-medium text-gray-600">Smart Notepad</span>
+      {/* Icon + title */}
+      <div className="flex items-center gap-1.5 px-2.5">
+        <img src={blottIcon} alt="" className="w-4 h-4 object-contain flex-shrink-0" draggable={false} />
+        <span className="text-xs text-gray-700 dark:text-gray-300" style={{ fontFamily: 'Segoe UI, system-ui, sans-serif' }}>
+          blott
+        </span>
       </div>
 
+      {/* Drag region fills remaining space */}
+      <div className="flex-1" />
+
+      {/* Window controls */}
       <div
         className="flex items-stretch h-full"
         style={{ WebkitAppRegion: 'no-drag' }}
       >
         <button
           onClick={() => window.electronAPI.window.minimize()}
-          className="flex items-center justify-center w-11 text-muted hover:text-gray-200 hover:bg-white/[0.08] transition-colors"
+          className="flex items-center justify-center w-11 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
           tabIndex={-1}
           aria-label="Minimize"
         >
@@ -57,7 +66,7 @@ export default function TitleBar() {
         </button>
         <button
           onClick={() => window.electronAPI.window.maximize()}
-          className="flex items-center justify-center w-11 text-muted hover:text-gray-200 hover:bg-white/[0.08] transition-colors"
+          className="flex items-center justify-center w-11 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
           tabIndex={-1}
           aria-label={isMaximized ? 'Restore' : 'Maximize'}
         >
@@ -65,7 +74,7 @@ export default function TitleBar() {
         </button>
         <button
           onClick={() => window.electronAPI.window.close()}
-          className="flex items-center justify-center w-11 text-muted hover:text-white hover:bg-red-600 transition-colors"
+          className="flex items-center justify-center w-11 text-gray-500 dark:text-gray-400 hover:bg-red-500 hover:text-white transition-colors"
           tabIndex={-1}
           aria-label="Close"
         >

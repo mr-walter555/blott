@@ -22,3 +22,26 @@ export async function askNotes(question, notes, history) {
   if (error) throw new Error(error)
   return { answer, citedIds }
 }
+
+// Streaming variant — `onToken` is called with each text chunk as it arrives.
+// Returns a Promise that resolves to { citedIds } when the stream completes.
+export function askNotesStream(question, notes, history, onToken) {
+  return new Promise((resolve, reject) => {
+    const requestId = crypto.randomUUID()
+    const cleanupToken = window.electronAPI.ai.onStreamToken(requestId, onToken)
+    const cleanupDone = window.electronAPI.ai.onStreamDone(requestId, ({ citedIds }) => {
+      cleanup()
+      resolve({ citedIds })
+    })
+    const cleanupError = window.electronAPI.ai.onStreamError(requestId, (error) => {
+      cleanup()
+      reject(new Error(error))
+    })
+    function cleanup() {
+      cleanupToken()
+      cleanupDone()
+      cleanupError()
+    }
+    window.electronAPI.ai.askNotesStream(requestId, question, notes, history)
+  })
+}

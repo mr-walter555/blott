@@ -3,7 +3,7 @@ export const GUIDE_NOTE_VERSION = 2
 
 const SAMPLE_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2ODAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgNjgwIDIyMCI+CiAgPHJlY3Qgd2lkdGg9IjY4MCIgaGVpZ2h0PSIyMjAiIHJ4PSIxMiIgZmlsbD0iI2Y1ZWZlOCIvPgogIDxyZWN0IHg9IjAiIHk9IjE0MCIgd2lkdGg9IjY4MCIgaGVpZ2h0PSI4MCIgZmlsbD0iI2U4ZGRkMCIvPgogIDxwb2x5Z29uIHBvaW50cz0iODAsMTQwIDIwMCw3MCAzMjAsMTQwIiBmaWxsPSIjZDRjNGIwIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyNjAsMTQwIDQwMCw1NSA1NDAsMTQwIiBmaWxsPSIjYzhiNDlhIi8+CiAgPGNpcmNsZSBjeD0iNTgwIiBjeT0iNjUiIHI9IjQyIiBmaWxsPSIjZjVkOWEwIi8+CiAgPHJlY3QgeD0iMCIgeT0iMjA4IiB3aWR0aD0iNjgwIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZTBkNGM0Ii8+Cjwvc3ZnPg=='
 
-const GUIDE_CONTENT = `<p>👋 <strong>Welcome to Smart Notepad.</strong> Everything you write is encrypted with <strong>AES-256-GCM</strong> and stays on your device — nothing ever leaves your machine. This note shows you what the editor can do.</p>
+const GUIDE_CONTENT = `<p>👋 <strong>Welcome to blott.</strong> Everything you write is encrypted with <strong>AES-256-GCM</strong> and stays on your device — nothing ever leaves your machine. This note shows you what the editor can do.</p>
 
 <h2>Text formatting</h2>
 <p>Select any text to bring up the toolbar. You can make things <strong>bold</strong>, <em>italic</em>, <u>underlined</u>, or <s>struck through</s>. <mark>Highlight key ideas</mark>, drop in <code>inline code</code>, or add <span style="color: #b07d3a">colour</span> to make things stand out.</p>
@@ -15,7 +15,7 @@ const GUIDE_CONTENT = `<p>👋 <strong>Welcome to Smart Notepad.</strong> Everyt
 <ol><li><p>Numbered lists for steps or ranked items</p></li><li><p>Where order actually matters</p></li></ol>
 
 <h2>Code</h2>
-<p>Paste code and Smart Notepad detects the language automatically. Or use the toolbar to wrap a selection in a block.</p>
+<p>Paste code and blott detects the language automatically. Or use the toolbar to wrap a selection in a block.</p>
 <pre><code class="language-javascript">async function fetchNotes(userId) {
   const response = await fetch('/api/notes/' + userId)
   const notes = await response.json()

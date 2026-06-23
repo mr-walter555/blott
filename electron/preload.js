@@ -43,6 +43,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
     status: () => ipcRenderer.invoke('ai:status'),
     processText: (action, text) => ipcRenderer.invoke('ai:processText', action, text),
     askNotes: (question, notes, history) => ipcRenderer.invoke('ai:askNotes', question, notes, history),
+    askNotesStream: (requestId, question, notes, history) =>
+      ipcRenderer.send('ai:askNotes:stream', { requestId, question, notes, history }),
+    onStreamToken: (requestId, callback) => {
+      const handler = (_, token) => callback(token)
+      ipcRenderer.on(`ai:stream:token:${requestId}`, handler)
+      return () => ipcRenderer.removeListener(`ai:stream:token:${requestId}`, handler)
+    },
+    onStreamDone: (requestId, callback) => {
+      const handler = (_, data) => callback(data)
+      ipcRenderer.on(`ai:stream:done:${requestId}`, handler)
+      return () => ipcRenderer.removeListener(`ai:stream:done:${requestId}`, handler)
+    },
+    onStreamError: (requestId, callback) => {
+      const handler = (_, error) => callback(error)
+      ipcRenderer.on(`ai:stream:error:${requestId}`, handler)
+      return () => ipcRenderer.removeListener(`ai:stream:error:${requestId}`, handler)
+    },
   },
 
   floating: {

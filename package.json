@@ -1,5 +1,5 @@
 {
-  "name": "smart-notepad",
+  "name": "blott",
   "version": "1.1.2",
   "private": true,
   "description": "AI-powered smart notepad desktop application",
@@ -22,6 +22,10 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@tiptap/extension-table": "^2.27.2",
+    "@tiptap/extension-table-cell": "^2.27.2",
+    "@tiptap/extension-table-header": "^2.27.2",
+    "@tiptap/extension-table-row": "^2.27.2",
     "electron-context-menu": "^3.6.1",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.8.9",
@@ -71,8 +75,8 @@
     "zustand": "^4.4.7"
   },
   "build": {
-    "appId": "com.smart-notepad.app",
-    "productName": "Smart Notepad",
+    "appId": "com.blott.app",
+    "productName": "blott",
     "directories": {
       "output": "dist-electron"
     },
@@ -107,7 +111,7 @@
     "publish": {
       "provider": "github",
       "owner": "mr-walter555",
-      "repo": "smart-notepad",
+      "repo": "blott",
       "releaseType": "release"
     }
   }

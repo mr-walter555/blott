@@ -156,7 +156,7 @@ export default function App() {
       <UpdateToast
         t={t}
         title="Downloading update…"
-        description="Smart Notepad will be ready to install when this finishes."
+        description="blott will be ready to install when this finishes."
         progress={percent}
       />
     ), { id: 'update-status', duration: Infinity })
@@ -168,7 +168,7 @@ export default function App() {
           <UpdateToast
             t={t}
             title={`Update available – v${status.version}`}
-            description="A new version of Smart Notepad is ready to download."
+            description="A new version of blott is ready to download."
             primaryLabel="Download"
             dismissOnPrimary={false}
             onPrimary={() => {

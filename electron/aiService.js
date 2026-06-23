@@ -12,8 +12,8 @@ function getClient(apiKey) {
       apiKey,
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
-        'HTTP-Referer': 'https://github.com/mr-walter555/smart-notepad',
-        'X-Title': 'Smart Notepad',
+        'HTTP-Referer': 'https://github.com/mr-walter555/blott',
+        'X-Title': 'blott',
       },
     })
     cachedKey = apiKey
@@ -60,19 +60,11 @@ function formatNoteDate(updatedAt) {
   return updatedAt ? updatedAt.slice(0, 10) : 'unknown date'
 }
 
-async function askNotes(apiKey, question, notes = [], history = []) {
-  const openai = getClient(apiKey)
-
+function buildAskMessages(question, notes, history) {
   const today = new Date().toISOString().slice(0, 10)
-
   const context = notes.length
     ? notes.map((n, i) => `[${i + 1}] ${n.title} (last updated ${formatNoteDate(n.updatedAt)})\n${n.excerpt}`).join('\n\n')
     : '(No notes were found that relate to this question.)'
-
-  // History entries are prior turns of this conversation, included so
-  // follow-up questions ("what about X?") are understood in context.
-  // Citation markers from earlier turns are stripped since [N] numbering
-  // is local to each turn's sources and would be misleading here.
   const historyMessages = history
     .filter(h => h?.question && h?.answer)
     .slice(-6)
@@ -80,30 +72,52 @@ async function askNotes(apiKey, question, notes = [], history = []) {
       { role: 'user', content: h.question },
       { role: 'assistant', content: h.answer.replace(/\s*\[\d+\]/g, '') },
     ])
-
-  const response = await openai.chat.completions.create({
-    model: MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: `You are a helpful assistant that answers questions using only the numbered notes provided as sources. Today's date is ${today}. Each source is labeled with the date it was last updated — use these dates to answer date-scoped questions (e.g. "this week", "yesterday", "last month"). Cite sources inline using [N], where N matches the source number. Within source text, "[ ]" marks an unfinished checklist item and "[x]" marks a completed one — these are unrelated to the [N] citation format. If the notes do not contain the answer, say so honestly instead of making things up. Use the prior conversation for context on follow-up questions, but base factual claims only on the current sources.`,
-      },
-      ...historyMessages,
-      {
-        role: 'user',
-        content: `Sources:\n${context}\n\nQuestion: ${question}`,
-      },
-    ],
-    max_tokens: 800,
-    temperature: 0.4,
-  })
-
-  const answer = response.choices[0]?.message?.content?.trim() || ''
-  const citedIds = [...new Set([...answer.matchAll(/\[(\d+)\]/g)].map(m => Number(m[1])))]
-    .map(n => notes[n - 1]?.id)
-    .filter(Boolean)
-
-  return { answer, citedIds }
+  return [
+    {
+      role: 'system',
+      content: `You are a helpful assistant that answers questions using only the numbered notes provided as sources. Today's date is ${today}. Each source is labeled with the date it was last updated — use these dates to answer date-scoped questions (e.g. "this week", "yesterday", "last month"). Cite sources inline using [N], where N matches the source number. Within source text, "[ ]" marks an unfinished checklist item and "[x]" marks a completed one — these are unrelated to the [N] citation format. If the notes do not contain the answer, say so honestly instead of making things up. Use the prior conversation for context on follow-up questions, but base factual claims only on the current sources.`,
+    },
+    ...historyMessages,
+    { role: 'user', content: `Sources:\n${context}\n\nQuestion: ${question}` },
+  ]
 }
 
-module.exports = { processText, askNotes }
+function extractCitedIds(answer, notes) {
+  return [...new Set([...answer.matchAll(/\[(\d+)\]/g)].map(m => Number(m[1])))]
+    .map(n => notes[n - 1]?.id)
+    .filter(Boolean)
+}
+
+async function askNotes(apiKey, question, notes = [], history = []) {
+  const openai = getClient(apiKey)
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: buildAskMessages(question, notes, history),
+    max_tokens: 2000,
+    temperature: 0.4,
+  })
+  const answer = response.choices[0]?.message?.content?.trim() || ''
+  return { answer, citedIds: extractCitedIds(answer, notes) }
+}
+
+async function askNotesStream(apiKey, question, notes = [], history = [], onToken) {
+  const openai = getClient(apiKey)
+  const stream = await openai.chat.completions.create({
+    model: MODEL,
+    messages: buildAskMessages(question, notes, history),
+    max_tokens: 2000,
+    temperature: 0.4,
+    stream: true,
+  })
+  let fullAnswer = ''
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content || ''
+    if (token) {
+      fullAnswer += token
+      onToken(token)
+    }
+  }
+  return { answer: fullAnswer, citedIds: extractCitedIds(fullAnswer, notes) }
+}
+
+module.exports = { processText, askNotes, askNotesStream }

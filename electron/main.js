@@ -12,8 +12,8 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0)
 }
 
-const iconPath = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
-const appIcon = nativeImage.createFromPath(iconPath)
+const iconPath = path.join(__dirname, '..', 'assets', 'icon.png')
+const appIcon = nativeImage.createFromBuffer(require('fs').readFileSync(iconPath))
 const Store = require('electron-store')
 const { v4: uuidv4 } = require('uuid')
 const contextMenu = require('electron-context-menu')
@@ -143,7 +143,7 @@ autoUpdater.on('update-downloaded', (info) => {
   updateState = 'downloaded'
   store.set('pendingWhatsNew', { version: info.version })
   sendUpdateStatus('downloaded', { version: info.version })
-  notifyIfUnfocused('Update ready', `Smart Notepad v${info.version} is ready — restart to install.`)
+  notifyIfUnfocused('Update ready', `blott v${info.version} is ready — restart to install.`)
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(-1)
 })
 
@@ -295,11 +295,11 @@ function showMainWindow() {
 
 function createTray() {
   tray = new Tray(appIcon)
-  tray.setToolTip('Smart Notepad')
+  tray.setToolTip('blott')
   tray.on('click', showMainWindow)
 
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open Smart Notepad', click: showMainWindow },
+    { label: 'Open blott', click: showMainWindow },
     { label: 'Quick Capture', click: toggleQuickCapture },
     { type: 'separator' },
     { label: 'Quit', click: () => { isQuitting = true; app.quit() } },
@@ -489,7 +489,10 @@ app.commandLine.appendSwitch('disable-gpu')
 app.commandLine.appendSwitch('disable-software-rasterizer')
 app.commandLine.appendSwitch('disable-http-cache')
 
-if (process.platform === 'win32') app.setAppUserModelId('com.smart-notepad.app')
+if (process.platform === 'win32') {
+  const isDev = process.env.NODE_ENV === 'development'
+  app.setAppUserModelId(isDev ? 'com.blott.app.dev' : 'com.blott.app')
+}
 
 app.whenReady().then(async () => {
   initEncryption()
@@ -665,6 +668,29 @@ ipcMain.handle('ai:askNotes', async (_, question, notes, history) => {
   }
 })
 
+ipcMain.on('ai:askNotes:stream', async (event, { requestId, question, notes, history }) => {
+  try {
+    const { citedIds } = await aiService.askNotesStream(
+      getOpenRouterKey(),
+      question,
+      notes,
+      history,
+      (token) => {
+        if (!event.sender.isDestroyed()) {
+          event.sender.send(`ai:stream:token:${requestId}`, token)
+        }
+      }
+    )
+    if (!event.sender.isDestroyed()) {
+      event.sender.send(`ai:stream:done:${requestId}`, { citedIds })
+    }
+  } catch (err) {
+    if (!event.sender.isDestroyed()) {
+      event.sender.send(`ai:stream:error:${requestId}`, friendlyAIError(err))
+    }
+  }
+})
+
 // ── IPC: Encryption ───────────────────────────────────────────────────────────
 
 ipcMain.handle('encryption:status', () => {
@@ -726,7 +752,7 @@ ipcMain.handle('quickCapture:save', (_, content) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('notes:created', note)
   }
-  notifyIfUnfocused('Note captured', 'Saved to Smart Notepad')
+  notifyIfUnfocused('Note captured', 'Saved to blott')
   if (win && !win.isDestroyed()) win.hide()
   return note
 })
