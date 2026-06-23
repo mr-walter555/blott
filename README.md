@@ -71,29 +71,41 @@ chmod +x blott-1.1.2.AppImage
 
 ## Features
 
-
-- **AI Ask** — Chat with all your notes at once using natural language (`Ctrl+Q`)
+### Ask AI
+Chat with all your notes at once using natural language. Press `Ctrl+Q` to open.
 
 <p align="center">
   <img src="assets/Screenshot 2026-06-23 104226.png" alt="Ask AI" width="560" />
 </p>
-- **AI Inline Actions** — Select text and right-click to summarise, expand, rewrite, translate, and more
-- **Quick Capture** — Global shortcut (`Alt+Space`) to jot a thought from anywhere, even when the app is closed
+
+### Quick Capture
+Press `Alt+Space` from anywhere — even when blott is closed — to instantly jot a thought.
 
 <p align="center">
   <img src="assets/Screenshot 2026-06-23 104842.png" alt="Quick Capture" width="480" />
 </p>
-- **Floating Sticky Notes** — Pin any note as an always-on-top window on your desktop
+
+### Floating Sticky Notes
+Pin any note as an always-on-top window that stays visible while you work in other apps.
 
 <p align="center">
   <img src="assets/Screenshot 2026-06-23 104433.png" alt="Floating sticky note" width="480" />
 </p>
-- **Command Palette** — Jump to anything with `Ctrl+K`
+
+### Command Palette
+Jump to any note, action, or setting instantly with `Ctrl+K`.
 
 <p align="center">
   <img src="assets/Screenshot 2026-06-23 104628.png" alt="Command Palette" width="560" />
 </p>
+
+### More
+- **Rich Text Editor** — Headings, bold, italic, lists, code blocks, tables and images via TipTap
+- **AI Inline Actions** — Select text and right-click to summarise, expand, rewrite or translate
+- **Workspaces** — Group notes into colour-coded workspaces
+- **Favourites & Recents** — Fast access to the notes you use most
 - **Dark / Light / System Theme** — Follows your OS preference automatically
+- **100% Local & Encrypted** — AES-256-GCM encryption; nothing leaves your machine
 
 ---
 
