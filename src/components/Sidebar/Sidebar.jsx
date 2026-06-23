@@ -1,10 +1,11 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useRef } from 'react'
 import {
   GearSix, Plus, SidebarSimple, MagnifyingGlass,
-  CaretDown, CaretRight, FileText, Star, ListChecks,
-  DotsThree, Trash, PencilSimple, BookOpen, Archive, Question, SquaresFour, Clock
+  CaretDown, CaretRight, Note, Star, ListDashes, Bookmarks,
+  DotsThree, Trash, PencilSimple, BookOpen, Archive, Question, Folder, Clock
 } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
+import { useShallow } from 'zustand/react/shallow'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import WorkspaceSection from './WorkspaceSection'
@@ -15,8 +16,8 @@ import { GUIDE_NOTE_ID } from '../../utils/guideNote'
 function NoteIcon({ note }) {
   if (note.id === GUIDE_NOTE_ID) return <BookOpen className="w-5 h-5 text-amber-500 flex-shrink-0" />
   if (note.content?.includes('data-type="taskList"'))
-    return <ListChecks className="w-5 h-5 text-muted flex-shrink-0" />
-  return <FileText className="w-5 h-5 text-muted flex-shrink-0" />
+    return <ListDashes className="w-5 h-5 text-muted flex-shrink-0" />
+  return <Note className="w-5 h-5 text-muted flex-shrink-0" />
 }
 
 export default function Sidebar() {
@@ -26,13 +27,29 @@ export default function Sidebar() {
   const openCommandPalette = useUIStore(s => s.openCommandPalette)
   const activeWorkspaceId  = useUIStore(s => s.activeWorkspaceId)
 
-  const allNotes        = useNotesStore(s => s.notes)
   const createNote      = useNotesStore(s => s.createNote)
   const setSelectedNote = useNotesStore(s => s.setSelectedNote)
   const selectedNoteId  = useNotesStore(s => s.selectedNoteId)
   const updateNote      = useNotesStore(s => s.updateNote)
   const archiveNote     = useNotesStore(s => s.archiveNote)
   const trashNote       = useNotesStore(s => s.trashNote)
+
+  const favoriteNotes = useNotesStore(useShallow(s =>
+    Object.values(s.notes)
+      .filter(n => n.favorite && !n.trashed && !n.archived)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+  ))
+
+  const recentNotes = useNotesStore(useShallow(s =>
+    Object.values(s.notes)
+      .filter(n => !n.trashed && !n.archived)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+      .slice(0, 5)
+  ))
+
+  const trashedCount = useNotesStore(
+    s => Object.values(s.notes).filter(n => n.trashed).length
+  )
 
   const [workspacesExpanded, setWorkspacesExpanded] = useState(true)
   const [favoritesExpanded, setFavoritesExpanded]   = useState(true)
@@ -42,28 +59,13 @@ export default function Sidebar() {
   const [renameValue,  setRenameValue]  = useState('')
   const renameRef = useRef(null)
 
+  const menuNote = useNotesStore(s => menu ? s.notes[menu.noteId] ?? null : null)
+
   function openMenu(e, note) {
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
     setMenu({ noteId: note.id, x: rect.right + 8, y: rect.top })
   }
-
-  const favoriteNotes = useMemo(() => {
-    return Object.values(allNotes)
-      .filter(n => n.favorite && !n.trashed && !n.archived)
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-  }, [allNotes])
-
-  const recentNotes = useMemo(() => {
-    const list = Object.values(allNotes).filter(n => !n.trashed && !n.archived)
-    return [...list]
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-      .slice(0, 5)
-  }, [allNotes])
-
-  const trashedCount = useMemo(() => {
-    return Object.values(allNotes).filter(n => n.trashed).length
-  }, [allNotes])
 
   const handleNewNote = async () => {
     const note = await createNote({ workspaceId: activeWorkspaceId || null })
@@ -194,7 +196,7 @@ export default function Sidebar() {
             onClick={c ? toggleSidebar : () => setFavoritesExpanded(!favoritesExpanded)}
             className="sidebar-item w-full"
           >
-            <Star className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
+            <Bookmarks className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
             {!c && <span className="flex-1 text-left text-xs font-semibold text-muted uppercase tracking-wider">Favorites</span>}
             {!c && (favoritesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />)}
           </button>
@@ -214,7 +216,7 @@ export default function Sidebar() {
                         : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                     }`}
                   >
-                    <FileText className="w-5 h-5 text-muted flex-shrink-0" />
+                    <Note className="w-5 h-5 text-muted flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium truncate ${
                         note.id === selectedNoteId
@@ -246,7 +248,7 @@ export default function Sidebar() {
             onClick={c ? toggleSidebar : () => setWorkspacesExpanded(!workspacesExpanded)}
             className="sidebar-item w-full"
           >
-            <SquaresFour className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
+            <Folder className="w-5 h-5 flex-shrink-0 text-black dark:text-white" />
             {!c && <span className="flex-1 text-left text-xs font-semibold text-muted uppercase tracking-wider">Workspaces</span>}
             {!c && (workspacesExpanded ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />)}
           </button>
@@ -293,60 +295,56 @@ export default function Sidebar() {
         <TrashModal anchorY={trashAnchorY} onClose={() => setTrashAnchorY(null)} />
       )}
 
-      {menu && (() => {
-        const note = allNotes[menu.noteId]
-        if (!note) return null
-        return (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} />
-            <div
-              className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-md py-2 w-56"
-              style={{ top: menu.y, left: menu.x }}
-            >
-              <div className="px-4 py-1.5 mb-1">
-                <p className="text-xs font-semibold text-muted">Note</p>
-              </div>
-
-              <button
-                onClick={() => { updateNote(note.id, { favorite: !note.favorite }); setMenu(null); toast(note.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: <Star className="w-4 h-4 text-yellow-400" /> }) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
-              >
-                <Star className={`w-4 h-4 ${note.favorite ? 'text-yellow-400' : 'text-muted'}`} weight={note.favorite ? 'fill' : 'regular'} />
-                {note.favorite ? 'Remove from favourites' : 'Add to favourites'}
-              </button>
-
-              <button
-                onClick={() => { setRenamingId(note.id); setRenameValue(note.title || ''); setMenu(null) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
-              >
-                <PencilSimple className="w-4 h-4 text-muted" />
-                Rename
-              </button>
-
-              <button
-                onClick={() => { archiveNote(note.id, !note.archived); setMenu(null); toast(note.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-muted" /> }) }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
-              >
-                <Archive className={`w-4 h-4 ${note.archived ? 'text-brown-500' : 'text-muted'}`} weight={note.archived ? 'fill' : 'regular'} />
-                {note.archived ? 'Unarchive' : 'Archive'}
-              </button>
-
-              {note.id !== GUIDE_NOTE_ID && (
-                <>
-                  <div className="mx-3 my-1 border-t border-gray-100 dark:border-gray-700" />
-                  <button
-                    onClick={() => { trashNote(note.id, true); setMenu(null); toast('Moved to Trash', { icon: <Trash className="w-4 h-4 text-red-500" /> }) }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                  >
-                    <Trash className="w-4 h-4" />
-                    Move to Trash
-                  </button>
-                </>
-              )}
+      {menu && menuNote && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} />
+          <div
+            className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-md py-2 w-56"
+            style={{ top: menu.y, left: menu.x }}
+          >
+            <div className="px-4 py-1.5 mb-1">
+              <p className="text-xs font-semibold text-muted">Note</p>
             </div>
-          </>
-        )
-      })()}
+
+            <button
+              onClick={() => { updateNote(menuNote.id, { favorite: !menuNote.favorite }); setMenu(null); toast(menuNote.favorite ? 'Removed from favourites' : 'Added to favourites', { icon: <Star className="w-4 h-4 text-yellow-400" /> }) }}
+              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+            >
+              <Star className={`w-4 h-4 ${menuNote.favorite ? 'text-yellow-400' : 'text-muted'}`} weight={menuNote.favorite ? 'fill' : 'regular'} />
+              {menuNote.favorite ? 'Remove from favourites' : 'Add to favourites'}
+            </button>
+
+            <button
+              onClick={() => { setRenamingId(menuNote.id); setRenameValue(menuNote.title || ''); setMenu(null) }}
+              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+            >
+              <PencilSimple className="w-4 h-4 text-muted" />
+              Rename
+            </button>
+
+            <button
+              onClick={() => { archiveNote(menuNote.id, !menuNote.archived); setMenu(null); toast(menuNote.archived ? 'Note unarchived' : 'Note archived', { icon: <Archive className="w-4 h-4 text-muted" /> }) }}
+              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
+            >
+              <Archive className={`w-4 h-4 ${menuNote.archived ? 'text-brown-500' : 'text-muted'}`} weight={menuNote.archived ? 'fill' : 'regular'} />
+              {menuNote.archived ? 'Unarchive' : 'Archive'}
+            </button>
+
+            {menuNote.id !== GUIDE_NOTE_ID && (
+              <>
+                <div className="mx-3 my-1 border-t border-gray-100 dark:border-gray-700" />
+                <button
+                  onClick={() => { trashNote(menuNote.id, true); setMenu(null); toast('Moved to Trash', { icon: <Trash className="w-4 h-4 text-red-500" /> }) }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  <Trash className="w-4 h-4" />
+                  Move to Trash
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

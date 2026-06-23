@@ -10,17 +10,22 @@ export function useAutoSave(noteId, content, title, { onSaving, onSaved, onError
   const latestRef = useRef({ noteId, content, title })
   latestRef.current = { noteId, content, title }
 
+  // Keep callbacks in a ref so persist() never needs to change identity
+  // when the parent re-renders with new inline function references.
+  const cbRef = useRef({ onSaving, onSaved, onError })
+  cbRef.current = { onSaving, onSaved, onError }
+
   const persist = useCallback(async (noteId, content, title) => {
-    onSaving?.()
+    cbRef.current.onSaving?.()
     try {
       await updateNote(noteId, { content, title })
       lastSavedRef.current = { content, title }
-      onSaved?.()
+      cbRef.current.onSaved?.()
     } catch (err) {
       console.error('Failed to persist note update:', err)
-      onError?.()
+      cbRef.current.onError?.()
     }
-  }, [updateNote, onSaving, onSaved, onError])
+  }, [updateNote])
 
   const flush = useCallback(() => {
     const { noteId, content, title } = latestRef.current

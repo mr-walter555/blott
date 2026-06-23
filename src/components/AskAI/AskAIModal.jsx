@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback } from 'react'
+﻿import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
@@ -210,6 +210,12 @@ export default function AskAIModal() {
   const setSelectedNote = useNotesStore(s => s.setSelectedNote)
   const notes          = useNotesStore(s => s.notes)
   const selectedNoteId = useNotesStore(s => s.selectedNoteId)
+
+  // Pre-filter active notes once — shared by ask() and regenerate()
+  const activeNotes = useMemo(
+    () => Object.values(notes).filter(n => !n.trashed),
+    [notes]
+  )
   const appendToNote   = useNotesStore(s => s.appendToNote)
   const createNote     = useNotesStore(s => s.createNote)
 
@@ -320,7 +326,7 @@ export default function AskAIModal() {
     if (!trimmed || loading) return
     setQuestion('')
     setLoading(true)
-    const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
+    const candidates = rankNotesByRelevance(trimmed, activeNotes)
     let nextThread
     try {
       const streamingTurn = { question: trimmed, versions: [{ answer: '', sources: candidates, cited: [], feedback: null }], versionIndex: 0, streaming: true }
@@ -357,7 +363,7 @@ export default function AskAIModal() {
     const trimmed = turn.question
     const baseThread = thread.slice(0, index)
     setLoading(true)
-    const candidates = rankNotesByRelevance(trimmed, Object.values(notes).filter(n => !n.trashed))
+    const candidates = rankNotesByRelevance(trimmed, activeNotes)
     let nextThread
     try {
       const existingVersions = turn.error ? [] : getVersions(turn)
@@ -506,7 +512,7 @@ export default function AskAIModal() {
           <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
             {historyOpen ? 'History' : 'Ask your notes'}
           </h2>
-          {!historyOpen && <CaretDown className="w-3.5 h-3.5 text-muted flex-shrink-0" />}
+          {!historyOpen && <CaretDown className="w-4 h-4 text-black dark:text-white flex-shrink-0" />}
         </button>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -516,15 +522,15 @@ export default function AskAIModal() {
             title="Conversation history"
             aria-label="Conversation history"
           >
-            <ClockCounterClockwise className="w-4 h-4 text-muted" />
+            <ClockCounterClockwise className="w-5 h-5 text-black dark:text-white" />
           </button>
           <button onClick={copyTranscript} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="Copy conversation" aria-label="Copy conversation">
             {transcriptCopied
               ? <Check className="w-4 h-4 text-green-500" />
-              : <Copy className="w-4 h-4 text-muted" />}
+              : <Copy className="w-5 h-5 text-black dark:text-white" />}
           </button>
           <button onClick={newConversation} disabled={!thread.length} className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed" title="New conversation" aria-label="New conversation">
-            <PlusCircle className="w-4 h-4 text-muted" />
+            <PlusCircle className="w-5 h-5 text-black dark:text-white" />
           </button>
 
           {/* Layout switcher */}
@@ -535,7 +541,7 @@ export default function AskAIModal() {
               title="Chat layout"
               aria-label="Chat layout"
             >
-              {(() => { const L = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0]; return <L.icon className="w-4 h-4 text-muted" /> })()}
+              {(() => { const L = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0]; return <L.icon className="w-5 h-5 text-black dark:text-white" /> })()}
             </button>
             <AnimatePresence>
               {layoutMenuOpen && (
@@ -552,7 +558,7 @@ export default function AskAIModal() {
                       onClick={() => chooseLayout(id)}
                       className="w-full flex items-center gap-3 px-3.5 py-2 text-sm text-gray-700 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                     >
-                      <Icon className="w-4 h-4 text-muted flex-shrink-0" />
+                      <Icon className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
                       <span className="flex-1 text-left">{label}</span>
                       {id === layoutId && <Check className="w-4 h-4 text-brown-500 flex-shrink-0" />}
                     </button>
@@ -564,7 +570,7 @@ export default function AskAIModal() {
 
           <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
           <button onClick={closeAskAI} className="btn-icon" title="Close" aria-label="Close">
-            <X className="w-4 h-4 text-muted" />
+            <X className="w-5 h-5 text-black dark:text-white" />
           </button>
         </div>
       </div>
@@ -921,16 +927,16 @@ export default function AskAIModal() {
             <div className="flex items-center justify-between mt-1.5">
               <div className="flex items-center gap-1">
                 <button className="btn-icon !w-7 !h-7" title="Add context" aria-label="Add context">
-                  <Plus className="w-4 h-4 text-muted" />
+                  <Plus className="w-5 h-5 text-black dark:text-white" />
                 </button>
                 <button className="flex items-center gap-1 px-2 h-7 rounded-lg text-xs text-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors">
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <SlidersHorizontal className="w-4.5 h-4.5 text-black dark:text-white" />
                   Auto
                 </button>
               </div>
               <div className="flex items-center gap-0.5">
                 <button className="btn-icon !w-7 !h-7" title="Voice input" aria-label="Voice input">
-                  <Microphone className="w-4 h-4 text-muted" />
+                  <Microphone className="w-5 h-5 text-black dark:text-white" />
                 </button>
                 <button
                   onClick={() => ask(question)}

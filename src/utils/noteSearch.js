@@ -23,8 +23,13 @@ function tokenize(text) {
 // Word-boundary match count — short terms like "ai" or "no" are substrings of
 // many unrelated words ("again", "maintain", "know", "notes"), so a plain
 // `.includes()`/`.split()` count would treat almost every note as a match.
-function countMatches(text, term) {
-  return (text.match(new RegExp(`\\b${term}\\b`, 'g')) || []).length
+// Pattern is compiled once per term outside the notes loop, not per note.
+function makeTermPattern(term) {
+  return new RegExp(`\\b${term}\\b`, 'g')
+}
+
+function countMatches(text, pattern) {
+  return (text.match(pattern) || []).length
 }
 
 function toCandidate(note, body) {
@@ -76,15 +81,18 @@ export function rankNotesByRelevance(question, notes, topK = 6) {
   const queryTerms = [...new Set(tokenize(question))]
   if (!queryTerms.length) return byRecency(notes, topK)
 
+  // Compile each pattern once — not once per note
+  const termPatterns = queryTerms.map(makeTermPattern)
+
   const scored = notes.map(note => {
     const title = (note.title || '').toLowerCase()
     const body = stripHtmlWithTasks(note.content || '')
     const bodyLower = body.toLowerCase()
     let score = 0
 
-    for (const term of queryTerms) {
-      if (countMatches(title, term) > 0) score += 3
-      score += Math.min(countMatches(bodyLower, term), 5)
+    for (const pattern of termPatterns) {
+      if (countMatches(title, pattern) > 0) score += 3
+      score += Math.min(countMatches(bodyLower, pattern), 5)
     }
 
     return { note, score, body }

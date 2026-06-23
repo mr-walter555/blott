@@ -3,6 +3,7 @@ import { Plus, DotsThree, PencilSimple, Trash, X } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import DropdownMenu from '../common/DropdownMenu'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useShallow } from 'zustand/react/shallow'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { useUIStore } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
@@ -30,22 +31,30 @@ function WorkspaceAvatar({ name, color, size = 'sm' }) {
 }
 
 export default function WorkspaceSection() {
-  const workspaces      = useWorkspaceStore(s => s.getAll())
+  const workspaces      = useWorkspaceStore(useShallow(s => s.getAll()))
   const createWorkspace = useWorkspaceStore(s => s.createWorkspace)
   const updateWorkspace = useWorkspaceStore(s => s.updateWorkspace)
   const deleteWorkspace = useWorkspaceStore(s => s.deleteWorkspace)
   const activeWorkspaceId = useUIStore(s => s.activeWorkspaceId)
   const setActiveWorkspace = useUIStore(s => s.setActiveWorkspace)
-  const notes = useNotesStore(s => s.notes)
+
+  // Count active notes per workspace — returns a stable object that only
+  // changes when workspace membership changes, not on every content edit.
+  const noteCountByWorkspace = useNotesStore(useShallow(s => {
+    const counts = {}
+    Object.values(s.notes).forEach(n => {
+      if (!n.trashed && !n.archived && n.workspaceId) {
+        counts[n.workspaceId] = (counts[n.workspaceId] || 0) + 1
+      }
+    })
+    return counts
+  }))
 
   const [menuId, setMenuId]                   = useState(null)
   const [wsModal, setWsModal]                 = useState(null)
   const [confirmWorkspace, setConfirmWorkspace] = useState(null)
   const menuTriggerRef = useRef(null)
   const [modal, setModal] = useState(null)
-
-  const getNoteCount = (wsId) =>
-    Object.values(notes).filter(n => n.workspaceId === wsId && !n.trashed && !n.archived).length
 
   const openCreate = ()   => setModal({ mode: 'create' })
   const openRename = (ws) => { setModal({ mode: 'rename', ws }); setMenuId(null) }
@@ -82,7 +91,7 @@ export default function WorkspaceSection() {
             <WorkspaceAvatar name={ws.name} color={ws.color} />
             <span className="flex-1 text-left truncate">{ws.name}</span>
             <span className="text-xs text-muted dark:text-gray-600">
-              {getNoteCount(ws.id) || ''}
+              {noteCountByWorkspace[ws.id] || ''}
             </span>
             <button
               onClick={(e) => {

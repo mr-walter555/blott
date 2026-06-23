@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -89,6 +89,8 @@ export default function NoteEditor({ noteId }) {
   const [title, setTitle]     = useState(note?.title || '')
   const [content, setContent] = useState(note?.content || '')
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved' | 'unsaved' | 'saving' | 'error'
+  const saveStatusRef = useRef(saveStatus)
+  useEffect(() => { saveStatusRef.current = saveStatus }, [saveStatus])
   const [menuPos,   setMenuPos]   = useState(null)
   const [aiResult,  setAiResult]  = useState(null)
   const [aiLoadingVer, setAiLoadingVer] = useState(0)
@@ -123,11 +125,10 @@ export default function NoteEditor({ noteId }) {
     return () => window.removeEventListener('keydown', handler)
   }, [focusMode, toggleFocusMode])
 
-  const saveNow = useAutoSave(noteId, content, title, {
-    onSaving: () => setSaveStatus('saving'),
-    onSaved:  () => setSaveStatus('saved'),
-    onError:  () => setSaveStatus('error'),
-  })
+  const onSaving = useCallback(() => setSaveStatus('saving'), [])
+  const onSaved  = useCallback(() => setSaveStatus('saved'),  [])
+  const onError  = useCallback(() => setSaveStatus('error'),  [])
+  const saveNow = useAutoSave(noteId, content, title, { onSaving, onSaved, onError })
 
   useEffect(() => {
     const handler = (e) => {
@@ -221,17 +222,18 @@ export default function NoteEditor({ noteId }) {
   // If this note is edited elsewhere (e.g. a floating sticky note) while open
   // here, refresh title/content from the broadcast — but only when this
   // editor has no unsaved local changes, so we never clobber active edits.
+  // saveStatus is read via ref so this effect doesn't re-run on every save cycle.
   useEffect(() => {
     if (!window.electronAPI?.onNoteUpdated) return
     return window.electronAPI.onNoteUpdated((updated) => {
-      if (updated.id !== noteId || saveStatus !== 'saved') return
+      if (updated.id !== noteId || saveStatusRef.current !== 'saved') return
       setTitle(updated.title || '')
       if (editor && editor.getHTML() !== updated.content) {
         editor.commands.setContent(updated.content || '', false)
         setContent(updated.content || '')
       }
     })
-  }, [noteId, editor, saveStatus])
+  }, [noteId, editor])
 
   // Live-insert content appended from elsewhere (e.g. "Add to note" in Ask AI)
   // when this note's editor happens to be open.
@@ -325,7 +327,7 @@ export default function NoteEditor({ noteId }) {
 
   if (!note) return null
 
-  const wordCount = getWordCount(content)
+  const wordCount = useMemo(() => getWordCount(content), [content])
   const charCount = editor?.storage.characterCount?.characters() ?? 0
 
   return (
