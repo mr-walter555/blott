@@ -136,8 +136,6 @@ All notes are encrypted with AES-256-GCM before being written to disk — no clo
 
 **Frontend:** React 18 · Vite · TipTap · Zustand · Framer Motion · Tailwind CSS
 
-```
-
 ## Contributing
 
 Have an idea or found a bug? Contributions are welcome.
