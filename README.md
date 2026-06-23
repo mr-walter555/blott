@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/blott.webp" alt="blott logo" width="96" />
+  <img src="assets/blott.png" alt="blott logo" width="96" />
 </p>
 <h1 align="center">blott</h1>
 
