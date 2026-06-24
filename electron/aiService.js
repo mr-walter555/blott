@@ -13,7 +13,7 @@ function getClient(apiKey) {
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
         'HTTP-Referer': 'https://github.com/mr-walter555/blott',
-        'X-Title': 'blott',
+        'X-Title': 'Blott',
       },
     })
     cachedKey = apiKey

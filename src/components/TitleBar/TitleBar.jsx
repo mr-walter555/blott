@@ -44,7 +44,7 @@ export default function TitleBar() {
       <div className="flex items-center gap-1.5 px-2.5">
         <img src={blottIcon} alt="" className="w-4 h-4 object-contain flex-shrink-0" draggable={false} />
         <span className="text-xs text-gray-700 dark:text-gray-300" style={{ fontFamily: 'Segoe UI, system-ui, sans-serif' }}>
-          blott
+          Blott
         </span>
       </div>
 

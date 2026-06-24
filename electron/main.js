@@ -143,7 +143,7 @@ autoUpdater.on('update-downloaded', (info) => {
   updateState = 'downloaded'
   store.set('pendingWhatsNew', { version: info.version })
   sendUpdateStatus('downloaded', { version: info.version })
-  notifyIfUnfocused('Update ready', `blott v${info.version} is ready — restart to install.`)
+  notifyIfUnfocused('Update ready', `Blott v${info.version} is ready — restart to install.`)
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(-1)
 })
 
@@ -295,11 +295,11 @@ function showMainWindow() {
 
 function createTray() {
   tray = new Tray(appIcon)
-  tray.setToolTip('blott')
+  tray.setToolTip('Blott')
   tray.on('click', showMainWindow)
 
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open blott', click: showMainWindow },
+    { label: 'Open Blott', click: showMainWindow },
     { label: 'Quick Capture', click: toggleQuickCapture },
     { type: 'separator' },
     { label: 'Quit', click: () => { isQuitting = true; app.quit() } },
@@ -752,7 +752,7 @@ ipcMain.handle('quickCapture:save', (_, content) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('notes:created', note)
   }
-  notifyIfUnfocused('Note captured', 'Saved to blott')
+  notifyIfUnfocused('Note captured', 'Saved to Blott')
   if (win && !win.isDestroyed()) win.hide()
   return note
 })

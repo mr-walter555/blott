@@ -24,8 +24,8 @@ fs.copyFileSync(electronExe, targetExe)
 rcedit(targetExe, {
   icon: iconFile,
   'version-string': {
-    ProductName:      'blott',
-    FileDescription:  'blott',
+    ProductName:      'Blott',
+    FileDescription:  'Blott',
     OriginalFilename: 'blott.exe',
   },
   'file-version':    '1.0.0.0',
