@@ -1,6 +1,34 @@
+import DOMPurify from 'dompurify'
+
+function escapeHtmlAttr(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const SAFE_PROTOCOLS = ['http:', 'https:', 'mailto:', 'tel:']
+
+function isSafeUrl(href) {
+  try {
+    return SAFE_PROTOCOLS.includes(new URL(href).protocol)
+  } catch {
+    // relative URLs are fine; non-parseable strings are not
+    return !href.trim().toLowerCase().startsWith('javascript:')
+  }
+}
+
 export function exportAsPDF(title, content) {
   const w = window.open('', '_blank')
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title || 'Note'}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet"><style>
+  const safeTitle = escapeHtmlAttr(title || 'Note')
+  const safeContent = DOMPurify.sanitize(content || '', {
+    ADD_ATTR: ['target'],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
+  })
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet"><style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Google Sans', ui-sans-serif, system-ui, sans-serif; max-width: 700px; margin: 48px auto; padding: 0 32px; color: #111; line-height: 1.7; }
     h1 { font-size: 2em; font-weight: 700; margin-bottom: 8px; }
@@ -18,8 +46,8 @@ export function exportAsPDF(title, content) {
     a  { color: #1a0dab; }
     @media print { body { margin: 0; padding: 24px 32px; } }
   </style></head><body>
-  <h1>${title || 'Untitled'}</h1>
-  ${content}
+  <h1>${safeTitle}</h1>
+  ${safeContent}
   </body></html>`)
   w.document.close()
   setTimeout(() => { w.print() }, 250)
@@ -39,7 +67,9 @@ export function exportAsMarkdown(title, content) {
     .replace(/<code[^>]*>(.*?)<\/code>/gis,    '`$1`')
     .replace(/<pre[^>]*>(.*?)<\/pre>/gis,      '```\n$1\n```\n\n')
     .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gis, '> $1\n\n')
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gis, '[$2]($1)')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gis, (_, href, text) =>
+      isSafeUrl(href) ? `[${text}](${href})` : text
+    )
     .replace(/<li[^>]*>\s*(?:<[^>]+>)?(.*?)(?:<\/[^>]+>)?\s*<\/li>/gis, '- $1\n')
     .replace(/<\/ul>\s*|<\/ol>\s*/gi,          '\n')
     .replace(/<ul[^>]*>|<ol[^>]*>/gi,          '')

@@ -18,8 +18,6 @@ import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import { createLowlight, common } from 'lowlight'
-
-const lowlight = createLowlight(common)
 import { useNotesStore } from '../../store/notesStore'
 import { useUIStore, FONT_FAMILIES } from '../../store/uiStore'
 import { useAutoSave } from '../../hooks/useAutoSave'
@@ -33,6 +31,8 @@ import TagsBar from './TagsBar'
 import { getWordCount } from '../../utils/helpers'
 import { markdownToHtml } from '../../utils/markdownToHtml'
 import { handleLinkClick } from '../../utils/handleLinkClick'
+
+const lowlight = createLowlight(common)
 
 const CODE_KEYWORDS = /\b(function|const|let|var|import|export|def|async|await|=>|interface|typeof|instanceof)\b/
 const CODE_SYMBOLS = /[{};]|=>|::|->|&&|\|\||\/\//
@@ -325,10 +325,10 @@ export default function NoteEditor({ noteId }) {
     if (e.key === 'ArrowDown') { e.preventDefault(); editor?.commands.focus('start') }
   }
 
-  if (!note) return null
-
   const wordCount = useMemo(() => getWordCount(content), [content])
   const charCount = editor?.storage.characterCount?.characters() ?? 0
+
+  if (!note) return null
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-950 flex-1 overflow-hidden">

@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+﻿import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
@@ -238,6 +238,11 @@ export default function AskAIModal() {
   const inputRef     = useRef(null)
   const scrollRef    = useRef(null)
   const layoutMenuRef = useRef(null)
+  const slotRef      = useRef(null)
+
+  useLayoutEffect(() => {
+    slotRef.current = document.getElementById('ai-sidebar-slot')
+  })
 
   // Tracks the panel's mount lifecycle so closing can play a "retract" exit
   // animation (the reverse of the open animation) before unmounting.
@@ -955,19 +960,17 @@ export default function AskAIModal() {
 
   // ── Rendering ──────────────────────────────────────────────────────────────
 
-  const slot = document.getElementById('ai-sidebar-slot')
-
   return (
     <>
       {/* Sidebar mode: portal panel into the GSAP-animated slot inside MainLayout.
           The slot's width animation (0 ↔ 384px) creates the "push content" effect.
           Fades in on mount and fades out on close (reverse of the open animation)
           so it doesn't pop abruptly while the slot expands/collapses. */}
-      {phase !== 'closed' && layoutId === 'sidebar' && slot && createPortal(
+      {phase !== 'closed' && layoutId === 'sidebar' && slotRef.current && createPortal(
         <div className={`bg-white dark:bg-gray-900 h-full flex flex-col overflow-hidden ${phase === 'closing' ? 'animate-fade-out' : 'animate-fade-in'}`}>
           {panel}
         </div>,
-        slot
+        slotRef.current
       )}
 
       {/* Floating mode: overlay that pops in from / retracts back into the FAB

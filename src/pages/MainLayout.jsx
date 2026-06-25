@@ -136,7 +136,7 @@ export default function MainLayout() {
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           className="fixed bottom-6 right-6 z-40 bg-brown-50 dark:bg-brown-950 rounded-full shadow-lg border border-brown-100 dark:border-brown-800 flex items-center justify-center hover:shadow-xl transition-shadow"
           style={{ width: 52, height: 52 }}
-          title="Ask your notes (Ctrl+Shift+A)"
+          title="Ask your notes (Ctrl+Q)"
         >
           <span ref={sparkleRef} className="flex items-center justify-center">
             <Sparkle className="w-6 h-6 text-brown-500" />
