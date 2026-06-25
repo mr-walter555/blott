@@ -29,36 +29,54 @@ jobs:
             } catch (_) {}
 
             const range = prevTag ? `${prevTag}..HEAD` : 'HEAD';
-            const log = execSync(
-              `git log --pretty=format:"- %s (%h)" ${range}`,
+
+            // Use unit-separator (\x1F) between fields and record-separator (\x1E)
+            // between commits so subjects containing spaces/tabs parse cleanly.
+            const raw = execSync(
+              `git log --format="%H%x1F%h%x1F%s%x1E" ${range}`,
               { encoding: 'utf8' }
             ).trim();
 
-            const { data: commits } = await github.rest.repos.listCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 100
-            });
+            const records = raw
+              ? raw.split('\x1e').map(r => r.trim()).filter(Boolean)
+              : [];
 
             const seen = new Set();
             const avatars = [];
-            for (const c of commits) {
-              if (c.author && !seen.has(c.author.login)) {
-                seen.add(c.author.login);
-                avatars.push(
-                  `[<img src="${c.author.avatar_url}&s=64" width="64" title="${c.author.login}">](${c.author.html_url})`
-                );
-              }
+            const lines = [];
+
+            for (const record of records) {
+              const [sha, shortSha, subject] = record.split('\x1f');
+
+              let username = '';
+              try {
+                const { data } = await github.rest.repos.getCommit({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: sha.trim(),
+                });
+                if (data.author?.login) {
+                  username = data.author.login;
+                  if (!seen.has(username)) {
+                    seen.add(username);
+                    avatars.push(
+                      `[<img src="${data.author.avatar_url}&s=64" width="64" title="@${username}">](${data.author.html_url})`
+                    );
+                  }
+                }
+              } catch (_) {}
+
+              lines.push(`- ${subject.trim()} (${shortSha.trim()})${username ? ` @${username}` : ''}`);
             }
 
             const body = [
               '## What\'s Changed',
               '',
-              log || '_No commits since last tag_',
+              lines.length ? lines.join('\n') : '_No commits since last tag_',
               '',
               '## Contributors',
               '',
-              avatars.join(' ')
+              avatars.length ? avatars.join(' ') : '_No contributors found_',
             ].join('\n');
 
             const tag = context.ref.replace('refs/tags/', '');
