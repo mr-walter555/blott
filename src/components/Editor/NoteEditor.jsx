@@ -13,10 +13,6 @@ import TextStyle from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import ResizableImage from './extensions/ResizableImage'
-import Table from '@tiptap/extension-table'
-import TableRow from '@tiptap/extension-table-row'
-import TableCell from '@tiptap/extension-table-cell'
-import TableHeader from '@tiptap/extension-table-header'
 import { createLowlight, common } from 'lowlight'
 import { useNotesStore } from '../../store/notesStore'
 import { useUIStore, FONT_FAMILIES } from '../../store/uiStore'
@@ -156,10 +152,6 @@ export default function NoteEditor({ noteId }) {
       CharacterCount,
       TextStyle,
       Color,
-      Table.configure({ resizable: true, HTMLAttributes: { class: 'tiptap-table' } }),
-      TableRow,
-      TableHeader,
-      TableCell,
     ],
     content: note?.content || '',
     editable: !note?.trashed,
