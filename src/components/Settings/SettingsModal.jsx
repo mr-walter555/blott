@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash, DownloadSimple, Info, FolderOpen, PlugsConnected } from '@phosphor-icons/react'
+import { X, Palette, TextT, Keyboard, Database, Robot, ArrowsClockwise, Eye, EyeSlash, DownloadSimple, Info, FolderOpen, PlugsConnected, Sun, Moon, Monitor } from '@phosphor-icons/react'
 import { useUIStore, FONT_FAMILIES } from '../../store/uiStore'
 import { useNotesStore } from '../../store/notesStore'
 import { electronService } from '../../services/electronService'
@@ -98,6 +98,113 @@ const SHORTCUTS = [
   { keys: 'Ctrl+Z', action: 'Undo' },
   { keys: 'Ctrl+Shift+Z', action: 'Redo' },
   { keys: 'Esc', action: 'Close modal/palette' },
+]
+
+function LightPreview() {
+  return (
+    <svg viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full block">
+      <rect width="220" height="130" fill="#f9fafb"/>
+      <rect width="58" height="130" fill="#f3f4f6"/>
+      <circle cx="9"  cy="8" r="3" fill="#ff5f57"/><circle cx="18" cy="8" r="3" fill="#ffbd2e"/><circle cx="27" cy="8" r="3" fill="#28c840"/>
+      <rect x="5" y="18" width="48" height="13" rx="4" fill="#e5e7eb"/><rect x="9" y="21" width="30" height="4" rx="2" fill="#9ca3af"/><rect x="9" y="28" width="20" height="3" rx="1.5" fill="#d1d5db"/>
+      <rect x="5" y="35" width="48" height="13" rx="4" fill="#fff"/><rect x="9" y="38" width="26" height="4" rx="2" fill="#d1d5db"/><rect x="9" y="45" width="17" height="3" rx="1.5" fill="#e5e7eb"/>
+      <rect x="5" y="52" width="48" height="13" rx="4" fill="#fff"/><rect x="9" y="55" width="32" height="4" rx="2" fill="#d1d5db"/><rect x="9" y="62" width="22" height="3" rx="1.5" fill="#e5e7eb"/>
+      <rect x="58" y="0" width="162" height="130" fill="#fff"/>
+      <rect x="58" y="0"  width="162" height="15" fill="#f9fafb"/>
+      <rect x="58" y="14" width="162" height="1"  fill="#f3f4f6"/>
+      <rect x="68" y="23" width="72" height="8" rx="3" fill="#111827"/>
+      <rect x="68" y="37" width="122" height="5" rx="2" fill="#e5e7eb"/>
+      <rect x="68" y="46" width="102" height="5" rx="2" fill="#e5e7eb"/>
+      <rect x="68" y="55" width="112" height="5" rx="2" fill="#e5e7eb"/>
+      <rect x="68" y="64" width="88"  height="5" rx="2" fill="#e5e7eb"/>
+      <rect x="68" y="78" width="118" height="5" rx="2" fill="#e5e7eb"/>
+      <rect x="68" y="87" width="96"  height="5" rx="2" fill="#e5e7eb"/>
+    </svg>
+  )
+}
+
+function DarkPreview() {
+  return (
+    <svg viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full block">
+      <rect width="220" height="130" fill="#0f172a"/>
+      <rect width="58" height="130" fill="#1e293b"/>
+      <circle cx="9"  cy="8" r="3" fill="#ff5f57"/><circle cx="18" cy="8" r="3" fill="#ffbd2e"/><circle cx="27" cy="8" r="3" fill="#28c840"/>
+      <rect x="5" y="18" width="48" height="13" rx="4" fill="#334155"/><rect x="9" y="21" width="30" height="4" rx="2" fill="#64748b"/><rect x="9" y="28" width="20" height="3" rx="1.5" fill="#475569"/>
+      <rect x="5" y="35" width="48" height="13" rx="4" fill="#1e293b"/><rect x="9" y="38" width="26" height="4" rx="2" fill="#475569"/><rect x="9" y="45" width="17" height="3" rx="1.5" fill="#334155"/>
+      <rect x="5" y="52" width="48" height="13" rx="4" fill="#1e293b"/><rect x="9" y="55" width="32" height="4" rx="2" fill="#475569"/><rect x="9" y="62" width="22" height="3" rx="1.5" fill="#334155"/>
+      <rect x="58" y="0" width="162" height="130" fill="#0f172a"/>
+      <rect x="58" y="0"  width="162" height="15" fill="#1e293b"/>
+      <rect x="58" y="14" width="162" height="1"  fill="#334155"/>
+      <rect x="68" y="23" width="72" height="8" rx="3" fill="#f1f5f9"/>
+      <rect x="68" y="37" width="122" height="5" rx="2" fill="#334155"/>
+      <rect x="68" y="46" width="102" height="5" rx="2" fill="#334155"/>
+      <rect x="68" y="55" width="112" height="5" rx="2" fill="#334155"/>
+      <rect x="68" y="64" width="88"  height="5" rx="2" fill="#334155"/>
+      <rect x="68" y="78" width="118" height="5" rx="2" fill="#334155"/>
+      <rect x="68" y="87" width="96"  height="5" rx="2" fill="#334155"/>
+    </svg>
+  )
+}
+
+function SystemPreview() {
+  return (
+    <svg viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full block">
+      {/* Left half — light */}
+      <rect width="109" height="130" fill="#f9fafb"/>
+      <rect width="38" height="130" fill="#f3f4f6"/>
+      <circle cx="7"  cy="8" r="2.5" fill="#ff5f57"/><circle cx="14" cy="8" r="2.5" fill="#ffbd2e"/><circle cx="21" cy="8" r="2.5" fill="#28c840"/>
+      <rect x="3" y="18" width="32" height="10" rx="3" fill="#e5e7eb"/>
+      <rect x="3" y="32" width="32" height="10" rx="3" fill="#fff"/>
+      <rect x="3" y="46" width="32" height="10" rx="3" fill="#fff"/>
+      <rect x="38" y="0" width="71" height="130" fill="#fff"/>
+      <rect x="38" y="0" width="71" height="14" fill="#f9fafb"/>
+      <rect x="44" y="20" width="48" height="6" rx="2" fill="#111827"/>
+      <rect x="44" y="31" width="56" height="4" rx="1.5" fill="#e5e7eb"/>
+      <rect x="44" y="39" width="44" height="4" rx="1.5" fill="#e5e7eb"/>
+      <rect x="44" y="47" width="52" height="4" rx="1.5" fill="#e5e7eb"/>
+      {/* Divider */}
+      <rect x="108" y="0" width="2" height="130" fill="#cbd5e1"/>
+      {/* Right half — dark */}
+      <rect x="110" width="110" height="130" fill="#0f172a"/>
+      <rect x="110" width="38"  height="130" fill="#1e293b"/>
+      <rect x="113" y="18" width="32" height="10" rx="3" fill="#334155"/>
+      <rect x="113" y="32" width="32" height="10" rx="3" fill="#1e293b"/>
+      <rect x="113" y="46" width="32" height="10" rx="3" fill="#1e293b"/>
+      <rect x="148" y="0"  width="72" height="130" fill="#0f172a"/>
+      <rect x="148" y="0"  width="72" height="14" fill="#1e293b"/>
+      <rect x="154" y="20" width="48" height="6" rx="2" fill="#f1f5f9"/>
+      <rect x="154" y="31" width="56" height="4" rx="1.5" fill="#334155"/>
+      <rect x="154" y="39" width="44" height="4" rx="1.5" fill="#334155"/>
+      <rect x="154" y="47" width="52" height="4" rx="1.5" fill="#334155"/>
+    </svg>
+  )
+}
+
+const THEME_CARDS = [
+  {
+    id: 'light',
+    label: 'Light theme',
+    description: 'This theme will activate when your system is set to light mode',
+    previewLabel: 'Default light',
+    Icon: Sun,
+    Preview: LightPreview,
+  },
+  {
+    id: 'dark',
+    label: 'Dark theme',
+    description: 'This theme will activate when your system is set to dark mode',
+    previewLabel: 'Default dark',
+    Icon: Moon,
+    Preview: DarkPreview,
+  },
+  {
+    id: 'system',
+    label: 'System',
+    description: 'Uses your system preference and switches automatically',
+    previewLabel: 'Default system',
+    Icon: Monitor,
+    Preview: SystemPreview,
+  },
 ]
 
 export default function SettingsModal() {
@@ -245,11 +352,11 @@ export default function SettingsModal() {
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <motion.div
         {...MODAL_CONTENT}
-        className="pointer-events-auto w-full max-w-xl h-[min(75vh,600px)] flex flex-col"
+        className="pointer-events-auto w-full max-w-2xl h-[min(80vh,680px)] flex flex-col"
       >
         <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
             <h2 id="settings-modal-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
             <button onClick={closeSettings} className="btn-icon">
               <X className="w-5 h-5 text-black dark:text-white" />
@@ -258,52 +365,79 @@ export default function SettingsModal() {
 
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar */}
-            <div className="w-44 border-r border-gray-100 dark:border-gray-800 py-2 flex-shrink-0">
+            <div className="w-44 border-r border-gray-100 dark:border-gray-800 py-3 flex-shrink-0">
               {SECTIONS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveSection(id)}
-                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
                     activeSection === id
                       ? 'text-brown-600 dark:text-brown-400 bg-brown-50 dark:bg-brown-950/40'
                       : 'text-gray-600 dark:text-muted hover:bg-gray-50 dark:hover:bg-white/[0.06]'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-5 h-5 flex-shrink-0" />
                   {label}
                 </button>
               ))}
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+            <div className="flex-1 overflow-y-auto px-8 py-7 space-y-8">
               {activeSection === 'appearance' && (
-                <>
-                  <SettingRow
-                    label="Theme"
-                    description={
-                      theme === 'system'
-                        ? `Following system — currently ${resolvedTheme}`
-                        : 'Choose light, dark, or follow system'
-                    }
-                  >
-                    <div className="flex gap-2">
-                      {['light', 'system', 'dark'].map(t => (
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Theme</p>
+                  <p className="text-xs text-muted mb-5">Choose how Blott looks on your device</p>
+                  <div className="grid grid-cols-2 gap-5">
+                    {THEME_CARDS.map(({ id, label, description, previewLabel, Icon, Preview }) => {
+                      const active = theme === id
+                      const isSystem = id === 'system'
+                      return (
                         <button
-                          key={t}
-                          onClick={() => { setTheme(t); handleSave() }}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
-                            theme === t
-                              ? 'bg-brown-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted hover:bg-gray-200 dark:hover:bg-gray-700'
+                          key={id}
+                          onClick={() => { setTheme(id); handleSave() }}
+                          className={`text-left rounded-xl border-2 p-5 transition-all ${isSystem ? 'col-span-2' : ''} ${
+                            active
+                              ? 'border-brown-600 dark:border-brown-500'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                           }`}
                         >
-                          {t}
+                          {isSystem ? (
+                            <div className="flex items-center gap-6">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Icon className="w-4 h-4 text-gray-700 dark:text-gray-300 flex-shrink-0" />
+                                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</span>
+                                  {active && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brown-600 text-white ml-1">Active</span>}
+                                </div>
+                                <p className="text-xs text-muted mb-3 leading-relaxed">{description}</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{previewLabel}</p>
+                              </div>
+                              <div className="w-48 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                <Preview />
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Icon className="w-4 h-4 text-gray-700 dark:text-gray-300 flex-shrink-0" />
+                                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{label}</span>
+                                </div>
+                                {active && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brown-600 text-white flex-shrink-0 ml-1">Active</span>}
+                              </div>
+                              <p className="text-xs text-muted mb-4 leading-relaxed">{description}</p>
+                              <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-3">
+                                <Preview />
+                              </div>
+                              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{previewLabel}</p>
+                            </>
+                          )}
                         </button>
-                      ))}
-                    </div>
-                  </SettingRow>
-                </>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
 
               {activeSection === 'editor' && (
@@ -368,7 +502,7 @@ export default function SettingsModal() {
               {activeSection === 'ai' && (
                 <>
                   {electronService.isElectron && (
-                    <SettingRow label="OpenRouter API Key" description="Powers Ask AI and writing tools. Get a free key at openrouter.ai/keys">
+                    <SettingRow label="OpenRouter API Key" description="Powers Ask AI and writing tools. Get a free key at openrouter.ai/keys" stacked>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <input
@@ -437,11 +571,11 @@ export default function SettingsModal() {
               )}
 
               {activeSection === 'integrations' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <p className="text-xs text-muted">Connect Blott with your favourite tools. More integrations coming soon.</p>
                   <div className="grid grid-cols-1 gap-3">
                     {INTEGRATIONS.map(({ id, name, description, logo, status }) => (
-                      <div key={id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
+                      <div key={id} className="flex items-center gap-4 p-5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
                         <span className="text-2xl flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">{logo}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{name}</p>
@@ -463,11 +597,11 @@ export default function SettingsModal() {
               )}
 
               {activeSection === 'shortcuts' && (
-                <div className="space-y-1">
+                <div>
                   {SHORTCUTS.map(({ keys, action }) => (
-                    <div key={keys} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                    <div key={keys} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
                       <span className="text-sm text-gray-600 dark:text-muted">{action}</span>
-                      <kbd className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted px-2 py-1 rounded-lg">
+                      <kbd className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-muted px-2.5 py-1 rounded-lg">
                         {keys}
                       </kbd>
                     </div>
@@ -598,14 +732,16 @@ export default function SettingsModal() {
   )
 }
 
-function SettingRow({ label, description, children }) {
+function SettingRow({ label, description, children, stacked }) {
   return (
-    <div className="space-y-2">
-      <div>
+    <div className={`pb-8 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0 ${stacked ? 'space-y-3' : 'flex items-start justify-between gap-8'}`}>
+      <div className={stacked ? '' : 'flex-1'}>
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</p>
-        {description && <p className="text-xs text-muted mt-0.5">{description}</p>}
+        {description && <p className="text-xs text-muted mt-1 leading-relaxed">{description}</p>}
       </div>
-      {children}
+      <div className={stacked ? '' : 'flex-shrink-0 pt-0.5'}>
+        {children}
+      </div>
     </div>
   )
 }

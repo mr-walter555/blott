@@ -81,7 +81,7 @@ export default function TrashModal({ anchorY, onClose }) {
         {/* List */}
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
           {trashed.length === 0 ? (
-            <EmptyState icon={Trash} message={search ? 'No results found' : 'Trash is empty'} className="py-12" iconClassName="w-8 h-8 text-gray-200 dark:text-gray-700" />
+            <EmptyState icon={Trash} message={search ? 'No results found' : 'Trash is empty'} className="py-12" iconClassName="w-8 h-8 text-gray-200 dark:text-gray-700" centered />
           ) : (
             trashed.map(note => (
               <div

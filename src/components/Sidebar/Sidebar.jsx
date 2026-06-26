@@ -125,7 +125,7 @@ export default function Sidebar() {
         {/* Recents */}
         <button
           onClick={c ? toggleSidebar : undefined}
-          className="flex items-center gap-1.5 w-full px-[18px] pt-2 pb-1"
+          className="flex items-center gap-1.5 w-full px-4 pt-2 pb-1"
           title={c ? 'Expand sidebar' : undefined}
           style={{ cursor: c ? 'pointer' : 'default' }}
         >
@@ -190,8 +190,8 @@ export default function Sidebar() {
 
         {!c && <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />}
 
-        {/* Favorites — icon stays at px-3 always */}
-        <div className="px-1.5">
+        {/* Favorites */}
+        <div className="px-1">
           <button
             onClick={c ? toggleSidebar : () => setFavoritesExpanded(!favoritesExpanded)}
             className="sidebar-item w-full"
@@ -242,8 +242,8 @@ export default function Sidebar() {
 
         {!c && <div className="mx-3 border-t border-gray-200 dark:border-gray-800 my-2" />}
 
-        {/* Workspaces — icon stays at px-3 always */}
-        <div className="px-1.5">
+        {/* Workspaces */}
+        <div className="px-1">
           <button
             onClick={c ? toggleSidebar : () => setWorkspacesExpanded(!workspacesExpanded)}
             className="sidebar-item w-full"
@@ -257,8 +257,8 @@ export default function Sidebar() {
 
       </div>
 
-      {/* Footer — icons always at sidebar-item's px-3, never reposition */}
-      <div className="pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-0.5 px-1.5">
+      {/* Footer */}
+      <div className="pb-3 pt-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-0.5 px-1">
         <button
           onClick={e => setTrashAnchorY(e.currentTarget.getBoundingClientRect().top)}
           title="Trash"
